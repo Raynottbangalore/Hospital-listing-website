@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-secondary: #0d9488;
+  --color-accent: #6366f1;
+  --color-background: #f8fafc;
+  --color-glass-white: rgba(255, 255, 255, 0.7);
+  --color-glass-blue: rgba(37, 99, 235, 0.1);
+  
+  --font-sans: "Inter", "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  --breakpoint-xs: 480px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-slate-900 overflow-x-hidden;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl;
+  }
+  
+  .glass-dark {
+    @apply backdrop-blur-md bg-slate-900/70 border border-white/10 shadow-xl;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+
+  .bg-mesh {
+    background: 
+      radial-gradient(circle at 0% 0%, hsla(210, 100%, 98%, 1) 0, transparent 50%),
+      radial-gradient(circle at 100% 0%, hsla(180, 100%, 98%, 1) 0, transparent 50%),
+      radial-gradient(circle at 100% 100%, hsla(210, 100%, 98%, 1) 0, transparent 50%),
+      radial-gradient(circle at 0% 100%, hsla(180, 100%, 98%, 1) 0, transparent 50%),
+      #ffffff;
+    position: relative;
+    z-index: 0;
+  }
+
+  .bg-mesh::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: inherit;
+    z-index: -1;
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24 px-4 sm:px-8 md:px-12 lg:px-24;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Lenis smooth scroll */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+
+  .will-change-transform {
+    will-change: transform, opacity;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+}
+
+/* Swiper custom styles */
+.swiper-pagination-bullet {
+  @apply w-2.5 h-2.5 bg-slate-300 opacity-100 transition-all duration-300;
+}
+
+.swiper-pagination-bullet-active {
+  @apply !w-8 !bg-primary !rounded-full;
+}
+
+.skeleton {
+  @apply bg-slate-200 animate-pulse rounded-md;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-primary/30 transition-colors;
+}
