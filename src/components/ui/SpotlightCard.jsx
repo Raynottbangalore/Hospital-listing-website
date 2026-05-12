@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { cn } from "../../utils/cn";
 
 export const SpotlightCard = ({ children, className, containerClassName }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
   const containerRef = useRef(null);
 
@@ -11,10 +10,11 @@ export const SpotlightCard = ({ children, className, containerClassName }) => {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
-    setPosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    containerRef.current.style.setProperty("--x", `${x}px`);
+    containerRef.current.style.setProperty("--y", `${y}px`);
   };
 
   return (
@@ -29,7 +29,7 @@ export const SpotlightCard = ({ children, className, containerClassName }) => {
         className="pointer-events-none absolute -inset-px transition-opacity duration-300 z-10"
         style={{
           opacity,
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(37, 99, 235, 0.1), transparent 40%)`,
+          background: `radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(37, 99, 235, 0.1), transparent 40%)`,
         }}
       />
       <div className={cn("relative z-20", className)}>{children}</div>

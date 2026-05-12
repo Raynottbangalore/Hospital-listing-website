@@ -31,11 +31,15 @@
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl;
+    @apply bg-white/70 border border-white/20 shadow-xl;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
   
   .glass-dark {
-    @apply backdrop-blur-md bg-slate-900/70 border border-white/10 shadow-xl;
+    @apply bg-slate-900/70 border border-white/10 shadow-xl;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .text-gradient {
@@ -43,25 +47,15 @@
   }
 
   .bg-mesh {
-    background: 
+    background-color: #ffffff;
+    background-image: 
       radial-gradient(circle at 0% 0%, hsla(210, 100%, 98%, 1) 0, transparent 50%),
       radial-gradient(circle at 100% 0%, hsla(180, 100%, 98%, 1) 0, transparent 50%),
       radial-gradient(circle at 100% 100%, hsla(210, 100%, 98%, 1) 0, transparent 50%),
-      radial-gradient(circle at 0% 100%, hsla(180, 100%, 98%, 1) 0, transparent 50%),
-      #ffffff;
+      radial-gradient(circle at 0% 100%, hsla(180, 100%, 98%, 1) 0, transparent 50%);
+    background-attachment: fixed;
     position: relative;
     z-index: 0;
-  }
-
-  .bg-mesh::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: inherit;
-    z-index: -1;
-    pointer-events: none;
-    transform: translateZ(0);
-    will-change: transform;
   }
 
   .section-padding {

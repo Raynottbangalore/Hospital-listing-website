@@ -10,7 +10,8 @@ import { About } from "../pages/About";
 import { Contact } from "../pages/Contact";
 import { Login } from "../pages/Login";
 import { Register } from "../pages/Register";
-import { Dashboard } from "../pages/Dashboard";
+import { ForgotPassword } from "../pages/ForgotPassword";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 export const AppRoutes = () => {
   return (
@@ -21,13 +22,16 @@ export const AppRoutes = () => {
         <Route path="hospitals/:id" element={<HospitalDetails />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="doctors/:id" element={<DoctorProfile />} />
-        <Route path="booking" element={<Booking />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route path="booking" element={<Booking />} />
+        </Route>
       </Route>
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
     </Routes>
   );
 };

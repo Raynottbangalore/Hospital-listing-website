@@ -1,14 +1,22 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, HeartPulse, Search, User } from "lucide-react";
+import { Menu, X, HeartPulse, Search, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "./Button";
 import { cn } from "../../utils/cn";
+import { useAuth } from "../../hooks/useAuth";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,14 +78,24 @@ export const Navbar = () => {
           <button className="p-2 text-slate-600 hover:text-primary transition-colors">
             <Search size={20} />
           </button>
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <User size={18} /> Login
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button size="sm">Get Started</Button>
-          </Link>
+          {currentUser ? (
+            <>
+              <Button onClick={handleLogout} variant="outline" size="sm" className="gap-2 text-red-500 hover:bg-red-50 hover:text-red-600 border-red-200">
+                <LogOut size={18} /> Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <User size={18} /> Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle */}
@@ -114,12 +132,22 @@ export const Navbar = () => {
               ))}
               <hr className="border-slate-200" />
               <div className="flex flex-col gap-3">
-                <Link to="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full">Login</Button>
-                </Link>
-                <Link to="/register" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full">Sign Up</Button>
-                </Link>
+                {currentUser ? (
+                  <>
+                    <Button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full gap-2 bg-red-500 hover:bg-red-600 text-white">
+                      <LogOut size={18} /> Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full">Login</Button>
+                    </Link>
+                    <Link to="/register" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full">Sign Up</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

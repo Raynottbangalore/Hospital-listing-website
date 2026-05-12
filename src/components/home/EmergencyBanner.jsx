@@ -52,6 +52,7 @@ export const EmergencyBanner = () => {
               <img 
                 src="https://images.unsplash.com/photo-1587745416684-47953f16f02f?auto=format&fit=crop&q=80&w=800" 
                 alt="Ambulance Service" 
+                loading="lazy"
                 className="rounded-3xl shadow-2xl border-4 border-white/20"
               />
             </motion.div>

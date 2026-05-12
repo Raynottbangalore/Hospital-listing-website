@@ -82,6 +82,7 @@ export const Testimonials = () => {
                   <img 
                     src={t.image} 
                     alt={t.name} 
+                    loading="lazy"
                     className="w-16 h-16 rounded-2xl object-cover shadow-lg"
                   />
                   <div>
