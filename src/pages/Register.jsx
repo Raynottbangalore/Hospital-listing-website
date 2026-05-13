@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { HeartPulse, Mail, Lock } from "lucide-react";
+import { HeartPulse, Mail, Lock, ArrowLeft } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { useAuth } from "../hooks/useAuth";
 
@@ -43,6 +43,11 @@ export const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden p-4 sm:p-8 py-10">
+      <Link to="/" className="absolute top-6 left-6 md:top-10 md:left-10 z-20 flex items-center gap-2 text-slate-500 hover:text-primary transition-colors font-bold bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md">
+        <ArrowLeft size={20} />
+        <span className="hidden sm:inline">Back to Home</span>
+      </Link>
+
       {/* Animated Background */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />

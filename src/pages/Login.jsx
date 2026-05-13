@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { HeartPulse, Mail, Lock, Eye } from "lucide-react";
+import { HeartPulse, Mail, Lock, Eye, ArrowLeft } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { useAuth } from "../hooks/useAuth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export const Login = () => {
   const { login, googleLogin, resetPassword } = useAuth();
@@ -31,8 +33,20 @@ export const Login = () => {
     try {
       setError("");
       setLoading(true);
-      await login(email, password);
-      navigate("/");
+      const userCredential = await login(email, password);
+      
+      const docRef = doc(db, "users", userCredential.user.uid);
+      const docSnap = await getDoc(docRef);
+      let role = "patient";
+      if (docSnap.exists()) {
+        role = docSnap.data().role;
+      }
+
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       handleFirebaseError(err);
     } finally {
@@ -44,8 +58,20 @@ export const Login = () => {
     try {
       setError("");
       setLoading(true);
-      await googleLogin();
-      navigate("/");
+      const userCredential = await googleLogin();
+      
+      const docRef = doc(db, "users", userCredential.user.uid);
+      const docSnap = await getDoc(docRef);
+      let role = "patient";
+      if (docSnap.exists()) {
+        role = docSnap.data().role;
+      }
+
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       handleFirebaseError(err);
     } finally {
@@ -57,6 +83,11 @@ export const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden p-4 sm:p-8">
+      <Link to="/" className="absolute top-6 left-6 md:top-10 md:left-10 z-20 flex items-center gap-2 text-slate-500 hover:text-primary transition-colors font-bold bg-white/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md">
+        <ArrowLeft size={20} />
+        <span className="hidden sm:inline">Back to Home</span>
+      </Link>
+
       {/* Animated Background */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />

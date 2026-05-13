@@ -15,7 +15,7 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass mt-4 rounded-2xl overflow-hidden"
+            className="md:hidden bg-white shadow-2xl border border-slate-100 mt-4 rounded-2xl overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-4">
               {navLinks.map((link) => (

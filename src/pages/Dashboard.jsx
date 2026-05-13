@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Calendar, Heart, FileText, 
   Settings, LogOut, Bell, Search, User,
-  Plus, Clock, MapPin, ChevronRight, Activity
+  Plus, Clock, MapPin, ChevronRight, Activity, Hospital
 } from "lucide-react";
 import { Button } from "../components/common/Button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const appointments = [
   { doctor: "Dr. Sarah Johnson", hospital: "City General", date: "May 14, 2024", time: "10:30 AM", status: "Upcoming" },
@@ -15,6 +17,13 @@ const appointments = [
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard },
@@ -51,7 +60,7 @@ export const Dashboard = () => {
           ))}
         </nav>
 
-        <button className="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all mt-auto">
+        <button onClick={handleLogout} className="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all mt-auto">
           <LogOut size={20} /> Logout
         </button>
       </aside>
