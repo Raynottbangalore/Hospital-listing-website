@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import { MapPin, Star, Clock, ArrowRight } from "lucide-react";
-import { hospitals } from "../../data/hospitals";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../firebase";
 import { Button } from "../common/Button";
 import { fadeIn } from "../../animations/variants";
 import { Link } from "react-router-dom";
@@ -14,6 +16,21 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 export const FeaturedHospitals = () => {
+  const [hospitals, setHospitals] = useState([]);
+
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "hospitals"));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setHospitals(data.slice(0, 6)); // limit to featured
+      } catch (error) {
+        console.error("Error fetching hospitals:", error);
+      }
+    };
+    fetchHospitals();
+  }, []);
+
   return (
     <section className="section-padding relative overflow-hidden bg-white/30">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between mb-20 gap-10">
@@ -75,7 +92,7 @@ export const FeaturedHospitals = () => {
                   />
                   <div className="absolute top-6 left-6 glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl">
                     <Star size={16} className="text-amber-500 fill-amber-500" />
-                    <span className="text-sm font-black text-slate-900">{hospital.rating}</span>
+                    <span className="text-sm font-black text-slate-900">{hospital.rating || "4.5"}</span>
                   </div>
                   {hospital.emergency && (
                     <div className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase animate-pulse shadow-lg">
@@ -86,7 +103,7 @@ export const FeaturedHospitals = () => {
                 
                 <div className="p-10 flex-grow flex flex-col">
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {hospital.departments.slice(0, 2).map((dept) => (
+                    {(hospital.departments || ["Cardiology", "Neurology", "Pediatrics"]).slice(0, 2).map((dept) => (
                       <span key={dept} className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
                         {dept}
                       </span>
@@ -102,13 +119,13 @@ export const FeaturedHospitals = () => {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "w-2 h-2 rounded-full animate-pulse",
-                        hospital.status === "Open" ? "bg-green-500" : "bg-red-500"
+                        (hospital.status || "Open") === "Open" ? "bg-green-500" : "bg-red-500"
                       )} />
                       <span className={cn(
                         "text-xs font-black uppercase tracking-widest",
-                        hospital.status === "Open" ? "text-green-600" : "text-red-500"
+                        (hospital.status || "Open") === "Open" ? "text-green-600" : "text-red-500"
                       )}>
-                        {hospital.status} Now
+                        {hospital.status || "Open"} Now
                       </span>
                     </div>
                     <Link to={`/hospitals/${hospital.id}`}>

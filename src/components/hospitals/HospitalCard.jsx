@@ -21,7 +21,7 @@ export const HospitalCard = ({ hospital }) => {
         />
         <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
           <Star size={16} className="text-amber-500 fill-amber-500" />
-          <span className="text-sm font-bold text-slate-900">{hospital.rating}</span>
+          <span className="text-sm font-bold text-slate-900">{hospital.rating || "4.5"}</span>
         </div>
         {hospital.emergency && (
           <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter animate-pulse">
@@ -46,7 +46,7 @@ export const HospitalCard = ({ hospital }) => {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          {hospital.departments.map((dept) => (
+          {(hospital.departments || ["Cardiology", "Neurology", "Pediatrics"]).slice(0, 3).map((dept) => (
             <span key={dept} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
               {dept}
             </span>
@@ -56,14 +56,14 @@ export const HospitalCard = ({ hospital }) => {
         <div className="mt-auto space-y-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Clock size={14} className={hospital.status === "Open" ? "text-green-500" : "text-red-500"} />
-              <span className={`text-xs font-bold ${hospital.status === "Open" ? "text-green-600" : "text-red-500"}`}>
-                {hospital.status} Now
+              <Clock size={14} className={(hospital.status || "Open") === "Open" ? "text-green-500" : "text-red-500"} />
+              <span className={`text-xs font-bold ${(hospital.status || "Open") === "Open" ? "text-green-600" : "text-red-500"}`}>
+                {hospital.status || "Open"} Now
               </span>
             </div>
             <div className="flex items-center gap-1 text-slate-400 text-xs">
               <Phone size={12} />
-              <span>{hospital.contact}</span>
+              <span>{hospital.contact || "+1 555-0000"}</span>
             </div>
           </div>
           
@@ -71,7 +71,7 @@ export const HospitalCard = ({ hospital }) => {
             <Link to={`/hospitals/${hospital.id}`}>
               <Button variant="outline" size="sm" className="w-full">Details</Button>
             </Link>
-            <Link to="/booking">
+            <Link to="/booking" state={{ hospital }}>
               <Button size="sm" className="w-full">Book Now</Button>
             </Link>
           </div>

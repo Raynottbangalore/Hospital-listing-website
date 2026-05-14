@@ -27,7 +27,7 @@ export const Button = ({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "rounded-xl transition-all duration-300 font-medium shadow-lg flex items-center justify-center gap-2",
+        "rounded-xl transition-all duration-300 font-medium shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
         variants[variant],
         sizes[size],
         className

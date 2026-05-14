@@ -23,6 +23,7 @@ export const HospitalsManagement = () => {
     rating: "",
     about: "",
     emergency: false,
+    contact: "",
   });
 
   const fetchHospitals = async () => {
@@ -62,7 +63,7 @@ export const HospitalsManagement = () => {
         toast.success("Hospital added successfully");
       }
       setIsModalOpen(false);
-      setFormData({ name: "", location: "", image: "", rating: "", about: "", emergency: false });
+      setFormData({ name: "", location: "", image: "", rating: "", about: "", emergency: false, contact: "" });
       setImageFile(null);
       setEditingId(null);
       fetchHospitals();
@@ -107,7 +108,7 @@ export const HospitalsManagement = () => {
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: "", location: "", image: "", rating: "", about: "", emergency: false });
+            setFormData({ name: "", location: "", image: "", rating: "", about: "", emergency: false, contact: "" });
             setImageFile(null);
             setIsModalOpen(true);
           }}
@@ -267,6 +268,17 @@ export const HospitalsManagement = () => {
                       required
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.contact}
+                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                      placeholder="+1 (555) 000-0000"
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
                   </div>

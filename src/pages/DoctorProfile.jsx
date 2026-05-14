@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -5,19 +6,70 @@ import {
   MessageSquare, Video, Calendar, ArrowLeft,
   ShieldCheck, Award, Heart
 } from "lucide-react";
-import { doctors } from "../data/doctors";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 import { Button } from "../components/common/Button";
 import { fadeIn } from "../animations/variants";
 
 export const DoctorProfile = () => {
   const { id } = useParams();
-  const doctor = doctors.find(d => d.id === parseInt(id)) || doctors[0];
+  const [doctor, setDoctor] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctor = async () => {
+      setLoading(true);
+      try {
+        const hospitalsSnap = await getDocs(collection(db, "hospitals"));
+        let foundDoctor = null;
+        for (const hDoc of hospitalsSnap.docs) {
+          const dSnap = await getDocs(collection(db, "hospitals", hDoc.id, "doctors"));
+          const docMatch = dSnap.docs.find(d => d.id === id);
+          if (docMatch) {
+            foundDoctor = { 
+              id: docMatch.id, 
+              hospitalId: hDoc.id, 
+              hospitalName: hDoc.data().name,
+              hospitalLocation: hDoc.data().location || hDoc.data().address || "Location not specified",
+              ...docMatch.data() 
+            };
+            break;
+          }
+        }
+        setDoctor(foundDoctor);
+      } catch (error) {
+        console.error("Error fetching doctor:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctor();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!doctor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <h2 className="text-2xl font-bold text-slate-900">Doctor not found</h2>
+        <Link to="/doctors">
+          <Button>Back to Doctors</Button>
+        </Link>
+      </div>
+    );
+  }
 
   const stats = [
-    { label: "Experience", value: doctor.experience, icon: Briefcase },
+    { label: "Experience", value: doctor.experience + " Years", icon: Briefcase },
     { label: "Patients", value: "2,000+", icon: Heart },
-    { label: "Reviews", value: doctor.reviews, icon: MessageSquare },
-    { label: "Rating", value: doctor.rating, icon: Star },
+    { label: "Reviews", value: doctor.reviews || "150+", icon: MessageSquare },
+    { label: "Rating", value: doctor.rating || "4.8", icon: Star },
   ];
 
   return (
@@ -47,16 +99,12 @@ export const DoctorProfile = () => {
                 <div className="flex-grow space-y-4 text-center md:text-left">
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <span className="bg-primary text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
-                      {doctor.specialization}
+                      {doctor.category || "Specialist"}
                     </span>
-                    <div className="flex items-center gap-1 text-amber-500 font-bold">
-                      <Star size={16} fill="currentColor" />
-                      <span>{doctor.rating}</span>
-                    </div>
                   </div>
                   <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900">{doctor.name}</h1>
                   <p className="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2 text-lg">
-                    <MapPin size={20} className="text-primary" /> {doctor.hospital}
+                    <MapPin size={20} className="text-primary" /> {doctor.hospitalName}{doctor.hospitalLocation ? `, ${doctor.hospitalLocation}` : ""}
                   </p>
                   
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
@@ -71,8 +119,8 @@ export const DoctorProfile = () => {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 pt-12 border-t border-slate-100">
-                {stats.map((stat, i) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-12 pt-12 border-t border-slate-100">
+                {stats.filter(s => s.label !== "Rating").map((stat, i) => (
                   <div key={i} className="text-center md:text-left space-y-1">
                     <div className="flex items-center justify-center md:justify-start gap-2 text-primary">
                       <stat.icon size={18} />
@@ -90,106 +138,137 @@ export const DoctorProfile = () => {
                 <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck size={24} className="text-primary" /> About {doctor.name}
                 </h3>
-                <p className="text-slate-600 leading-relaxed text-lg">
-                  {doctor.about} Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-line">
+                  {doctor.about || "No information available about this doctor yet."}
                 </p>
               </div>
 
-              <div className="glass p-8 md:p-12 rounded-[3rem] space-y-6">
-                <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                  <Award size={24} className="text-primary" /> Education & Qualifications
-                </h3>
-                <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-primary/10">
-                  {[
-                    { year: "2010 - 2013", title: "DM in Cardiology", school: "Johns Hopkins University" },
-                    { year: "2005 - 2009", title: "MD in Internal Medicine", school: "Harvard Medical School" },
-                    { year: "2000 - 2004", title: "MBBS", school: "Stanford School of Medicine" },
-                  ].map((edu, i) => (
-                    <div key={i} className="relative pl-10">
-                      <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
+              {(doctor.education || doctor.qualifications) && (
+                <div className="glass p-8 md:p-12 rounded-[3rem] space-y-6">
+                  <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <Award size={24} className="text-primary" /> Education & Qualifications
+                  </h3>
+                  <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-primary/10">
+                    {doctor.education && (
+                      <div className="relative pl-10">
+                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg">Education</h4>
+                        <p className="text-slate-600 whitespace-pre-line mt-2">{doctor.education}</p>
                       </div>
-                      <p className="text-xs font-bold text-primary mb-1">{edu.year}</p>
-                      <h4 className="font-bold text-slate-900">{edu.title}</h4>
-                      <p className="text-sm text-slate-500">{edu.school}</p>
-                    </div>
-                  ))}
+                    )}
+                    {doctor.qualifications && (
+                      <div className="relative pl-10">
+                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg">Qualifications & Certifications</h4>
+                        <p className="text-slate-600 whitespace-pre-line mt-2">{doctor.qualifications}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
             </div>
           </div>
 
           {/* Booking Card */}
           <div className="space-y-8">
-            <div className="glass p-8 rounded-[3.5rem] shadow-2xl sticky top-28 border-2 border-primary/20 bg-white">
-              <h3 className="text-2xl font-black text-slate-900 mb-8">Schedule Appointment</h3>
-              
-              <div className="space-y-8">
-                {/* Date Selection Mock */}
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Available Dates</label>
-                  <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                    {["Mon 12", "Tue 13", "Wed 14", "Thu 15"].map((date, i) => (
-                      <button key={i} className={cn(
-                        "flex flex-col items-center justify-center min-w-[80px] p-4 rounded-3xl transition-all border-2",
-                        i === 0 ? "bg-primary border-primary text-white shadow-xl scale-105" : "bg-slate-50 border-slate-100 text-slate-500 hover:border-primary/30"
-                      )}>
-                        <span className="text-xs font-bold opacity-80">{date.split(" ")[0]}</span>
-                        <span className="text-lg font-black">{date.split(" ")[1]}</span>
-                      </button>
-                    ))}
-                  </div>
+            <div className="glass p-8 rounded-[3.5rem] shadow-2xl sticky top-28 bg-white border border-white">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <p className="text-slate-500 font-medium">Consultation Fee</p>
+                  <p className="text-4xl font-black text-slate-900">${doctor.fee || "50"}</p>
                 </div>
 
-                {/* Time Slots Mock */}
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Available Slots</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {["09:00 AM", "10:30 AM", "12:00 PM", "02:30 PM", "04:00 PM", "05:30 PM"].map((time, i) => (
-                      <button key={i} className={cn(
-                        "py-3 rounded-2xl text-xs font-bold border-2 transition-all",
-                        i === 1 ? "bg-primary border-primary text-white" : "bg-white border-slate-100 text-slate-600 hover:border-primary/20"
-                      )}>
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-100 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-500">Total Consultation</span>
-                    <span className="text-2xl font-black text-slate-900">{doctor.fee}</span>
-                  </div>
-                  <Link to="/booking">
-                    <Button className="w-full py-5 text-xl rounded-3xl" size="lg">Confirm & Book</Button>
+                <div className="pt-6 border-t border-slate-100 space-y-4">
+                  <Link 
+                    to="/booking" 
+                    state={{ 
+                      doctor: doctor, 
+                      hospital: { id: doctor.hospitalId, name: doctor.hospitalName } 
+                    }}
+                    className="block"
+                  >
+                    <Button className="w-full py-6 text-xl rounded-[2rem] shadow-xl shadow-primary/20" size="lg">
+                      Book Appointment
+                    </Button>
                   </Link>
-                  <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest px-4">
-                    100% Secure Payment & Free Cancellation
+                  <p className="text-center text-xs text-slate-400 font-medium">
+                    Instant confirmation after selection
                   </p>
+                </div>
+
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <ShieldCheck size={20} className="text-primary" />
+                    <span className="text-sm font-medium">Verified Healthcare Provider</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <Calendar size={20} className="text-primary" />
+                    <span className="text-sm font-medium">Flexible Scheduling</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Extra Info */}
-            <div className="glass p-8 rounded-[3rem] bg-gradient-to-br from-primary/5 to-secondary/5">
-              <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Clock size={18} className="text-primary" /> Working Hours
-              </h4>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Mon - Fri</span>
-                  <span className="font-bold text-slate-900">09:00 AM - 06:00 PM</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Saturday</span>
-                  <span className="font-bold text-slate-900">10:00 AM - 02:00 PM</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Sunday</span>
-                  <span className="font-bold text-red-500 uppercase tracking-widest text-xs">Closed</span>
-                </div>
+            <div className="glass p-8 rounded-[3rem] bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/10">
+              <div className="flex justify-between items-center mb-6">
+                <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Clock size={18} className="text-primary" /> Working Hours
+                </h4>
+                {(() => {
+                  const now = new Date();
+                  const day = now.getDay();
+                  const hour = now.getHours();
+                  let isOpen = false;
+                  
+                  if (day >= 1 && day <= 5) { // Mon-Fri: 9AM - 8PM
+                    if (hour >= 9 && hour < 20) isOpen = true;
+                  } else if (day === 6) { // Sat: 9AM - 2PM
+                    if (hour >= 9 && hour <= 14) isOpen = true;
+                  }
+
+
+
+                  
+                  return isOpen ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold animate-pulse">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Open Now
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      Closed
+                    </span>
+                  );
+                })()}
               </div>
+              
+              <div className="space-y-3">
+                {[
+                  { days: "Mon - Fri", hours: "09:00 AM - 08:00 PM", active: new Date().getDay() >= 1 && new Date().getDay() <= 5 },
+                  { days: "Saturday", hours: "09:00 AM - 02:00 PM", active: new Date().getDay() === 6 },
+                  { days: "Sunday", hours: "CLOSED", active: new Date().getDay() === 0, closed: true },
+                ].map((schedule, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex justify-between items-center p-2 rounded-xl transition-all ${schedule.active ? 'bg-white shadow-sm ring-1 ring-primary/20 scale-[1.02]' : 'opacity-70'}`}
+                  >
+                    <span className={`text-sm ${schedule.active ? 'font-bold text-slate-900' : 'text-slate-500'}`}>{schedule.days}</span>
+                    <span className={`text-sm ${schedule.closed ? 'text-red-500 font-bold uppercase tracking-widest text-xs' : schedule.active ? 'font-black text-primary' : 'font-bold text-slate-900'}`}>
+                      {schedule.hours}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-[10px] text-slate-400 text-center font-medium italic">
+                * Timings may vary on public holidays
+              </p>
             </div>
           </div>
         </div>

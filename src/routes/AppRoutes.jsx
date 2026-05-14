@@ -13,6 +13,7 @@ import { Login } from "../pages/Login";
 import { Register } from "../pages/Register";
 import { ForgotPassword } from "../pages/ForgotPassword";
 import { Dashboard } from "../pages/Dashboard";
+import { MyBookings } from "../pages/MyBookings";
 import { AccessDenied } from "../pages/AccessDenied";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminProtectedRoute } from "./AdminProtectedRoute";
@@ -39,7 +40,8 @@ export const AppRoutes = () => {
         
         <Route element={<ProtectedRoute />}>
           <Route path="booking" element={<Booking />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<MyBookings />} />
+          <Route path="my-bookings" element={<MyBookings />} />
         </Route>
       </Route>
 

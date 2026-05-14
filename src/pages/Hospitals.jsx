@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Grid, List, LayoutGrid, SlidersHorizontal, ArrowUpDown } from "lucide-react";
-import { hospitals } from "../data/hospitals";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 import { HospitalCard } from "../components/hospitals/HospitalCard";
 import { FilterSidebar } from "../components/hospitals/FilterSidebar";
 import { Button } from "../components/common/Button";
@@ -10,10 +11,21 @@ import { fadeIn } from "../animations/variants";
 export const Hospitals = () => {
   const [view, setView] = useState("grid");
   const [loading, setLoading] = useState(true);
+  const [hospitals, setHospitals] = useState([]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const fetchHospitals = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "hospitals"));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setHospitals(data);
+      } catch (error) {
+        console.error("Error fetching hospitals:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHospitals();
   }, []);
 
   return (

@@ -28,6 +28,10 @@ export const AppointmentsManagement = () => {
   }, []);
 
   const handleStatusChange = async (id, newStatus) => {
+    if (newStatus === "Cancelled") {
+      handleDelete(id);
+      return;
+    }
     try {
       await updateDoc(doc(db, "appointments", id), { status: newStatus });
       toast.success(`Appointment marked as ${newStatus}`);

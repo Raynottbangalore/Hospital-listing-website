@@ -1,9 +1,36 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, MessageSquare, Clock, ArrowRight } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 import { Button } from "../components/common/Button";
 import { fadeIn } from "../animations/variants";
 
 export const Contact = () => {
+  const [settings, setSettings] = useState({
+    contactEmail: "support@medifind.com",
+    contactPhone: "+1 (800) 123-4567",
+    address: "123 Medical Plaza, New York, NY",
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const docRef = doc(db, "settings", "general");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data) {
+            setSettings(prev => ({ ...prev, ...data }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   return (
     <div className="section-padding min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -26,9 +53,9 @@ export const Contact = () => {
           {/* Contact Cards */}
           <div className="space-y-6">
             {[
-              { title: "Email Us", info: "support@medifind.com", icon: Mail, color: "bg-blue-500" },
-              { title: "Call Us", info: "+1 (800) 123-4567", icon: Phone, color: "bg-teal-500" },
-              { title: "Visit Us", info: "123 Medical Plaza, New York, NY", icon: MapPin, color: "bg-indigo-500" },
+              { title: "Email Us", info: settings.contactEmail, icon: Mail, color: "bg-blue-500" },
+              { title: "Call Us", info: settings.contactPhone, icon: Phone, color: "bg-teal-500" },
+              { title: "Visit Us", info: settings.address, icon: MapPin, color: "bg-indigo-500" },
             ].map((card, i) => (
               <motion.div
                 key={i}

@@ -25,7 +25,10 @@ export const DoctorsManagement = () => {
     experience: "",
     available: true,
     about: "",
+    education: "",
+    qualifications: "",
     image: "",
+    phone: "",
   });
 
   useEffect(() => {
@@ -83,7 +86,7 @@ export const DoctorsManagement = () => {
         toast.success("Doctor added successfully");
       }
       setIsModalOpen(false);
-      setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", image: "" });
+      setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", education: "", qualifications: "", image: "", phone: "" });
       setImageFile(null);
       setEditingId(null);
       fetchDoctors(selectedHospital);
@@ -129,7 +132,7 @@ export const DoctorsManagement = () => {
           disabled={!selectedHospital}
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", image: "" });
+            setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", education: "", qualifications: "", image: "", phone: "" });
             setImageFile(null);
             setIsModalOpen(true);
           }}
@@ -303,6 +306,18 @@ export const DoctorsManagement = () => {
                     />
                   </div>
                   
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+1 (555) 000-0000"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Consultation Fee</label>
@@ -389,15 +404,41 @@ export const DoctorsManagement = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">About</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">About Doctor</label>
                     <textarea
                       required
                       rows={3}
                       value={formData.about}
                       onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+                      placeholder="Brief description about the doctor's background and expertise..."
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Education</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={formData.education}
+                      onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                      placeholder="e.g. MBBS, MD in Cardiology"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Qualifications & Awards</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={formData.qualifications}
+                      onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
+                      placeholder="e.g. Certified Heart Specialist, Best Doctor Award 2023"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    />
+                  </div>
+
                 </form>
               </div>
 

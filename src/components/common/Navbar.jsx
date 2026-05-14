@@ -30,6 +30,7 @@ export const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Hospitals", path: "/hospitals" },
     { name: "Doctors", path: "/doctors" },
+    ...(currentUser ? [{ name: "My Bookings", path: "/dashboard" }] : []),
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];

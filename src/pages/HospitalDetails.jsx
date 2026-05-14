@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
@@ -5,15 +6,77 @@ import {
   Share2, Heart, ShieldCheck, CheckCircle2,
   Calendar, Users, Info, MessageSquare
 } from "lucide-react";
-import { hospitals } from "../data/hospitals";
-import { doctors } from "../data/doctors";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
 import { Button } from "../components/common/Button";
 import { fadeIn } from "../animations/variants";
 import { DoctorCard } from "../components/doctors/DoctorCard";
+import { useNavigate } from "react-router-dom";
 
 export const HospitalDetails = () => {
   const { id } = useParams();
-  const hospital = hospitals.find(h => h.id === parseInt(id)) || hospitals[0];
+  const navigate = useNavigate();
+  const [hospital, setHospital] = useState(null);
+  const [hospitalDoctors, setHospitalDoctors] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch Hospital Details
+        const docRef = doc(db, "hospitals", id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const hospitalData = { id: docSnap.id, ...docSnap.data() };
+          setHospital(hospitalData);
+
+          // Fetch Doctors for this Hospital
+          const doctorsSnap = await getDocs(collection(db, "hospitals", id, "doctors"));
+          const doctorsData = doctorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setHospitalDoctors(doctorsData);
+
+          // Derive Specializations from Doctors
+          const derivedSpecs = [...new Set(doctorsData.map(d => {
+            const cat = d.category || "";
+            // Map "Cardiologist" to "Cardiology", etc. if needed, or just use category
+            if (cat.endsWith('ist')) return cat.replace('ist', 'y');
+            return cat;
+          }))].filter(Boolean);
+          
+          setSpecializations(derivedSpecs.length > 0 ? derivedSpecs : (hospitalData.departments || []));
+        } else {
+          console.error("No such hospital!");
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!hospital) {
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <h2 className="text-2xl font-bold text-slate-900">Hospital not found</h2>
+        <Link to="/hospitals">
+          <Button>Back to Hospitals</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="section-padding min-h-screen">
@@ -56,24 +119,34 @@ export const HospitalDetails = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase">Multi-Specialty</span>
+                  <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase">
+                    {hospital.emergency ? "Emergency Ready" : "Multi-Specialty"}
+                  </span>
                   <div className="flex items-center gap-1">
                     <Star size={16} className="text-amber-500 fill-amber-500" />
-                    <span className="font-bold text-slate-900">{hospital.rating}</span>
-                    <span className="text-slate-400">({hospital.reviews} Reviews)</span>
+                    <span className="font-bold text-slate-900">{hospital.rating || "4.5"}</span>
+                    <span className="text-slate-400">({hospital.reviews || "120+"} Reviews)</span>
                   </div>
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold text-slate-900">{hospital.name}</h1>
-                <div className="flex items-center gap-6 text-slate-500 font-medium">
+                <div className="flex flex-col md:flex-row md:items-center gap-6 text-slate-500 font-medium">
                   <div className="flex items-center gap-2">
                     <MapPin size={18} className="text-primary" />
                     <span>{hospital.location}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={18} className="text-primary" />
-                    <span>{hospital.status} Now</span>
+                    <span>{hospital.status || "Open"} Now</span>
                   </div>
                 </div>
+              </div>
+              <div className="flex flex-col gap-3 min-w-[200px]">
+                <Button 
+                  className="w-full shadow-lg shadow-primary/20 py-4 rounded-2xl lg:hidden"
+                  onClick={() => navigate("/booking", { state: { hospital } })}
+                >
+                  Book Appointment
+                </Button>
               </div>
             </div>
 
@@ -84,7 +157,7 @@ export const HospitalDetails = () => {
                   <Info size={24} className="text-primary" /> Overview
                 </h3>
                 <p className="text-slate-600 leading-relaxed text-lg">
-                  {hospital.description} Our hospital is committed to providing exceptional healthcare services with a focus on patient comfort and safety. We utilize the latest medical advancements to ensure the best possible outcomes.
+                  {hospital.about || "Our hospital is committed to providing exceptional healthcare services with a focus on patient comfort and safety. We utilize the latest medical advancements to ensure the best possible outcomes."}
                 </p>
               </div>
 
@@ -92,7 +165,7 @@ export const HospitalDetails = () => {
                 <div>
                   <h4 className="font-bold text-slate-900 mb-4">Facilities</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {hospital.facilities.map(item => (
+                    {(hospital.facilities || ["24/7 Emergency", "Pharmacy", "ICU", "Laboratory"]).map(item => (
                       <div key={item} className="flex items-center gap-2 text-slate-600">
                         <CheckCircle2 size={16} className="text-green-500" />
                         <span className="text-sm font-medium">{item}</span>
@@ -103,11 +176,15 @@ export const HospitalDetails = () => {
                 <div>
                   <h4 className="font-bold text-slate-900 mb-4">Specializations</h4>
                   <div className="flex flex-wrap gap-2">
-                    {hospital.departments.map(dept => (
-                      <span key={dept} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">
-                        {dept}
-                      </span>
-                    ))}
+                    {specializations.length > 0 ? (
+                      specializations.map(dept => (
+                        <span key={dept} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold text-slate-600">
+                          {dept}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-slate-400 text-sm italic">No specializations listed</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -119,53 +196,46 @@ export const HospitalDetails = () => {
                 <Users size={24} className="text-primary" /> Specialist Doctors
               </h3>
               <div className="grid md:grid-cols-2 gap-6">
-                {doctors.slice(0, 2).map(doctor => (
-                  <DoctorCard key={doctor.id} doctor={doctor} />
-                ))}
+                {hospitalDoctors.length > 0 ? (
+                  hospitalDoctors.slice(0, 4).map(doctor => (
+                    <DoctorCard key={doctor.id} doctor={doctor} />
+                  ))
+                ) : (
+                  <div className="col-span-full py-8 text-center glass rounded-3xl text-slate-500">
+                    No specialist doctors found for this hospital.
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Sticky Sidebar */}
           <div className="space-y-8">
-            <div className="glass p-8 rounded-[3rem] shadow-2xl sticky top-28 border-2 border-primary/10">
-              <h3 className="text-2xl font-bold text-slate-900 mb-6">Book Appointment</h3>
-              <div className="space-y-6">
-                <div className="p-4 rounded-2xl bg-primary/5 space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Consultation Fee</span>
-                    <span className="font-bold text-slate-900">$50.00</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Next Available Slot</span>
-                    <span className="font-bold text-green-600">Today, 4:00 PM</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Select Specialization</label>
-                    <select className="w-full bg-slate-100 border-none rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary">
-                      {hospital.departments.map(dept => (
-                        <option key={dept}>{dept}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-2">Preferred Date</label>
-                    <input type="date" className="w-full bg-slate-100 border-none rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary" />
-                  </div>
-                </div>
-
-                <Link to="/booking">
-                  <Button className="w-full py-4 text-lg" size="lg">Confirm Booking</Button>
-                </Link>
-
-                <p className="text-center text-xs text-slate-400 px-4 leading-relaxed">
-                  By clicking "Confirm Booking", you agree to our Terms of Service and Privacy Policy.
+            <div className="glass p-8 rounded-[3rem] space-y-6 bg-white border border-white shadow-xl">
+              <div className="space-y-4">
+                <Button 
+                  className="w-full py-6 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20"
+                  onClick={() => navigate("/booking", { state: { hospital } })}
+                >
+                  Book Now
+                </Button>
+                <p className="text-center text-xs text-slate-400 font-medium">
+                  Free cancellation up to 24h before
                 </p>
               </div>
+
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                <div className="flex items-center gap-3 text-slate-600">
+                  <ShieldCheck size={20} className="text-primary" />
+                  <span className="text-sm font-medium">Verified Healthcare Provider</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600">
+                  <Calendar size={20} className="text-primary" />
+                  <span className="text-sm font-medium">Instant Confirmation</span>
+                </div>
+              </div>
             </div>
+
 
             {/* Contact Info Card */}
             <div className="glass p-8 rounded-[3rem] space-y-6">
@@ -173,15 +243,7 @@ export const HospitalDetails = () => {
               <div className="space-y-4">
                 <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-primary transition-colors">
                   <Phone size={18} className="text-primary" />
-                  <span className="text-sm font-medium">{hospital.contact}</span>
-                </a>
-                <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-primary transition-colors">
-                  <Globe size={18} className="text-primary" />
-                  <span className="text-sm font-medium">www.citygeneral.com</span>
-                </a>
-                <a href="#" className="flex items-center gap-3 text-slate-600 hover:text-primary transition-colors">
-                  <MessageSquare size={18} className="text-primary" />
-                  <span className="text-sm font-medium">Chat with us</span>
+                  <span className="text-sm font-medium">{hospital.contact || "+1 (555) 000-0000"}</span>
                 </a>
               </div>
             </div>

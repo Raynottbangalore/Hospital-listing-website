@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { HeartPulse, Mail, Lock, Eye, ArrowLeft } from "lucide-react";
 import { Button } from "../components/common/Button";
 import { useAuth } from "../hooks/useAuth";
@@ -10,6 +10,7 @@ import { db } from "../firebase";
 export const Login = () => {
   const { login, googleLogin, resetPassword } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -42,10 +43,12 @@ export const Login = () => {
         role = docSnap.data().role;
       }
 
+      const from = location.state?.from?.pathname || "/";
+
       if (role === "admin") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/");
+        navigate(from, { replace: true });
       }
     } catch (err) {
       handleFirebaseError(err);
@@ -67,10 +70,12 @@ export const Login = () => {
         role = docSnap.data().role;
       }
 
+      const from = location.state?.from?.pathname || "/";
+
       if (role === "admin") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/");
+        navigate(from, { replace: true });
       }
     } catch (err) {
       handleFirebaseError(err);
