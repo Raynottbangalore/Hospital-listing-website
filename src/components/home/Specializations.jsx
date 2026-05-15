@@ -2,21 +2,62 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Activity, Brain, Baby, Bone, 
-  UserRound, Stethoscope, ShieldAlert, Eye, HeartPulse
+  UserRound, Stethoscope, ShieldAlert, Eye, HeartPulse,
+  Microscope, Droplets, Pill, Waves, Syringe, ClipboardList,
+  ChevronRight, Thermometer, Dna, Zap
 } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 import { fadeIn, staggerContainer } from "../../animations/variants";
 import { SpotlightCard } from "../ui/SpotlightCard";
+import { useNavigate } from "react-router-dom";
+import { cn } from "../../utils/cn";
 
 const iconMap = {
+  // Lucide icons
   Activity, Brain, Baby, Bone, 
-  UserRound, Stethoscope, ShieldAlert, Eye, HeartPulse
+  UserRound, Stethoscope, ShieldAlert, Eye, HeartPulse,
+  Microscope, Droplets, Pill, Waves, Syringe, ClipboardList,
+  Thermometer, Dna, Zap,
+
+  // Mapping specialization names to icons (fuzzy match)
+  "Ophthalmologist": Eye,
+  "Endocrinologist": Activity,
+  "Neurologist": Brain,
+  "Cardiologist": HeartPulse,
+  "Orthopedic": Bone,
+  "Oncologist": Microscope,
+  "Urologist": Droplets,
+  "Pediatrician": Baby,
+  "Dermatologist": UserRound,
+  "Psychiatrist": Brain,
+  "Dentist": Zap, // Tooth/Zap shape
+  "General Physician": Stethoscope,
+  "Surgery": Syringe,
+  "Diagnostics": ClipboardList,
+  "Pharmacy": Pill,
+  "Radiology": Waves,
+  "Laboratory": Microscope,
+  "Genetics": Dna,
+  "Emergency": ShieldAlert,
+  "Checkup": Thermometer,
+};
+
+const getIcon = (name, iconKey) => {
+  if (iconKey && iconMap[iconKey]) return iconMap[iconKey];
+  
+  // Try matching by name
+  const match = Object.keys(iconMap).find(key => 
+    name?.toLowerCase().includes(key.toLowerCase())
+  );
+  
+  return match ? iconMap[match] : HeartPulse;
 };
 
 export const Specializations = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -31,6 +72,11 @@ export const Specializations = () => {
     };
     fetchCategories();
   }, []);
+
+  const handleSpecClick = (name) => {
+    navigate("/doctors", { state: { specialization: name } });
+  };
+
   return (
     <section className="section-padding relative overflow-hidden">
       {/* Decorative Blur */}
@@ -62,25 +108,29 @@ export const Specializations = () => {
         className="max-w-7xl mx-auto grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8"
       >
         {loading ? (
-          [...Array(4)].map((_, i) => (
+          [...Array(8)].map((_, i) => (
             <div key={i} className="h-48 bg-slate-100 rounded-[2.5rem] animate-pulse" />
           ))
         ) : (
           categories.map((spec) => {
-            const Icon = iconMap[spec.icon] || HeartPulse;
+            const Icon = getIcon(spec.name, spec.icon);
             return (
               <motion.div
                 key={spec.id}
                 variants={fadeIn("up", 0)}
                 className="will-change-transform"
+                onClick={() => handleSpecClick(spec.name)}
               >
                 <SpotlightCard className="p-6 md:p-10 flex flex-col items-center gap-4 md:gap-6 cursor-pointer text-center group h-full">
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-slate-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-xl shadow-primary/5 group-hover:shadow-primary/20 group-hover:scale-110 group-hover:-rotate-6">
                     <Icon className="w-8 h-8 md:w-10 md:h-10" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <h3 className="text-lg md:text-xl font-black text-slate-900 group-hover:text-primary transition-colors leading-tight">{spec.name}</h3>
-                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden xs:block">View Doctors</p>
+                    <div className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-bold text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      <span>View Doctors</span>
+                      <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </SpotlightCard>
               </motion.div>
@@ -91,3 +141,4 @@ export const Specializations = () => {
     </section>
   );
 };
+

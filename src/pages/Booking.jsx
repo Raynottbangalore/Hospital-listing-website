@@ -114,6 +114,23 @@ export const Booking = () => {
     }
   }, [location.state, allDoctors]);
 
+  // Clear dependent selections when hospital changes
+  useEffect(() => {
+    if (selection.hospital?.id) {
+      // Check if we just loaded from state, if so, don't clear
+      if (location.state?.doctor && selection.doctor?.id === location.state.doctor.id) {
+        return;
+      }
+      setSelection(prev => ({ 
+        ...prev, 
+        specialization: prev.hospital?.id === selection.hospital?.id ? prev.specialization : "",
+        doctor: prev.hospital?.id === selection.hospital?.id ? prev.doctor : null,
+        date: prev.hospital?.id === selection.hospital?.id ? prev.date : null,
+        time: prev.hospital?.id === selection.hospital?.id ? prev.time : null
+      }));
+    }
+  }, [selection.hospital?.id]);
+
   // Filter doctors when specialization changes
   useEffect(() => {
     if (!selection.specialization) {
@@ -145,8 +162,20 @@ export const Booking = () => {
         return;
     }
 
-    if (!selection.doctor || !selection.hospital || !selection.date || !selection.time) {
-        toast.error("Booking information is incomplete. Please go back and select all details.");
+    if (!selection.hospital?.id) {
+        toast.error("Hospital selection is missing. Please go back and select a hospital.");
+        return;
+    }
+    if (!selection.doctor?.id) {
+        toast.error("Doctor selection is missing. Please go back and select a doctor.");
+        return;
+    }
+    if (!selection.date) {
+        toast.error("Please select a date for your appointment.");
+        return;
+    }
+    if (!selection.time) {
+        toast.error("Please select a time slot.");
         return;
     }
 
@@ -555,42 +584,52 @@ export const Booking = () => {
 
             {/* Navigation Controls */}
             {currentStep < 6 && (
-              <div className="flex items-center justify-between mt-12 pt-8 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-between mt-12 pt-8 border-t border-slate-100 gap-6">
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   onClick={prevStep} 
                   disabled={currentStep === 1 || isSubmitting}
-                  className="gap-2 font-bold px-0 hover:bg-transparent"
+                  className="w-full sm:w-auto gap-2 font-bold px-8 py-4 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
                 >
                   <ArrowLeft size={18} /> Back
                 </Button>
                 
-                {currentStep === 5 ? (
-                  <Button 
-                    onClick={handleBookingSubmit} 
-                    disabled={isSubmitting || !patientDetails.name || !patientDetails.phone}
-                    className="gap-2 px-12 py-5 text-lg shadow-2xl shadow-primary/30 rounded-2xl"
-                  >
-                    {isSubmitting ? (
-                      <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>Confirm Booking <ArrowRight size={20} /></>
-                    )}
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={nextStep} 
-                    disabled={
-                      (currentStep === 1 && !selection.hospital) ||
-                      (currentStep === 2 && !selection.specialization) ||
-                      (currentStep === 3 && filteredDoctors.length === 0 && !selection.doctor) ||
-                      (currentStep === 4 && (!selection.date || !selection.time))
-                    }
-                    className="gap-2 px-12 py-5 text-lg rounded-2xl"
-                  >
-                    Next Step <ArrowRight size={20} />
-                  </Button>
-                )}
+                <div className="w-full sm:w-auto">
+                  {currentStep === 5 ? (
+                    <Button 
+                      onClick={handleBookingSubmit} 
+                      disabled={
+                        isSubmitting || 
+                        !patientDetails.name || 
+                        !patientDetails.phone || 
+                        !selection.hospital?.id || 
+                        !selection.doctor?.id || 
+                        !selection.date || 
+                        !selection.time
+                      }
+                      className="w-full sm:w-auto gap-3 px-10 sm:px-14 py-4 sm:py-5 text-lg shadow-2xl shadow-primary/25 rounded-2xl animate-in fade-in zoom-in duration-300"
+                    >
+                      {isSubmitting ? (
+                        <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>Confirm Booking <ArrowRight size={20} /></>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={nextStep} 
+                      disabled={
+                        (currentStep === 1 && !selection.hospital) ||
+                        (currentStep === 2 && !selection.specialization) ||
+                        (currentStep === 3 && filteredDoctors.length === 0 && !selection.doctor) ||
+                        (currentStep === 4 && (!selection.date || !selection.time))
+                      }
+                      className="w-full sm:w-auto gap-3 px-10 sm:px-14 py-4 sm:py-5 text-lg rounded-2xl shadow-lg shadow-primary/10 active:scale-95 transition-all"
+                    >
+                      Next Step <ArrowRight size={20} />
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

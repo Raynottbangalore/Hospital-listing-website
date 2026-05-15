@@ -6,9 +6,12 @@ import { db } from "../firebase";
 import { DoctorCard } from "../components/doctors/DoctorCard";
 import { Button } from "../components/common/Button";
 import { fadeIn } from "../animations/variants";
+import { useLocation } from "react-router-dom";
+import { cn } from "../utils/cn";
 
 export const Doctors = () => {
-  const [selectedSpec, setSelectedSpec] = useState("All");
+  const location = useLocation();
+  const [selectedSpec, setSelectedSpec] = useState(location.state?.specialization || "All");
   const [doctors, setDoctors] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -16,6 +19,9 @@ export const Doctors = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("All Locations");
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,7 +180,3 @@ export const Doctors = () => {
     </div>
   );
 };
-
-function cn(...classes) {
-  return classes.filter(Boolean).join(" ");
-}

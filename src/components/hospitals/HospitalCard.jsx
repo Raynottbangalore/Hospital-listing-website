@@ -3,7 +3,7 @@ import { MapPin, Star, Clock, Phone, ArrowRight, ShieldCheck } from "lucide-reac
 import { Button } from "../common/Button";
 import { Link } from "react-router-dom";
 
-export const HospitalCard = ({ hospital }) => {
+export const HospitalCard = ({ hospital, specializations = [] }) => {
   return (
     <motion.div
       layout
@@ -45,12 +45,16 @@ export const HospitalCard = ({ hospital }) => {
           <span>{hospital.location}</span>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {(hospital.departments || ["Cardiology", "Neurology", "Pediatrics"]).slice(0, 3).map((dept) => (
-            <span key={dept} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
-              {dept}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-2 mb-6 min-h-[32px]">
+          {specializations.length > 0 ? (
+            specializations.slice(0, 3).map((dept) => (
+              <span key={dept} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold">
+                {dept}
+              </span>
+            ))
+          ) : (
+            <span className="text-[10px] text-slate-400 italic">No specializations listed</span>
+          )}
         </div>
 
         <div className="mt-auto space-y-4 pt-4 border-t border-slate-100">

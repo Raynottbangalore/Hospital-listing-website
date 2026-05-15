@@ -17,15 +17,30 @@ import "swiper/css/pagination";
 
 export const FeaturedHospitals = () => {
   const [hospitals, setHospitals] = useState([]);
+  const [hospitalSpecs, setHospitalSpecs] = useState({}); // hospitalId -> [specializations]
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
+        setLoading(true);
         const querySnapshot = await getDocs(collection(db, "hospitals"));
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setHospitals(data.slice(0, 6)); // limit to featured
+        const featured = data.slice(0, 6);
+        setHospitals(featured);
+
+        // Fetch doctors for these hospitals to get real specializations
+        const specMap = {};
+        for (const h of featured) {
+          const dSnap = await getDocs(collection(db, "hospitals", h.id, "doctors"));
+          const specs = [...new Set(dSnap.docs.map(d => d.data().category))].filter(Boolean);
+          specMap[h.id] = specs;
+        }
+        setHospitalSpecs(specMap);
       } catch (error) {
         console.error("Error fetching hospitals:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchHospitals();
@@ -77,69 +92,82 @@ export const FeaturedHospitals = () => {
           }}
           className="pb-24 !overflow-visible"
         >
-          {hospitals.map((hospital) => (
-            <SwiperSlide key={hospital.id}>
-              <motion.div 
-                whileHover={{ y: -15 }}
-                className="bg-white rounded-[3.5rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-slate-100 h-full flex flex-col will-change-transform"
-              >
-                <div className="relative h-72 overflow-hidden">
-                  <img 
-                    src={hospital.image} 
-                    alt={hospital.name} 
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                  <div className="absolute top-6 left-6 glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl">
-                    <Star size={16} className="text-amber-500 fill-amber-500" />
-                    <span className="text-sm font-black text-slate-900">{hospital.rating || "4.5"}</span>
-                  </div>
-                  {hospital.emergency && (
-                    <div className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase animate-pulse shadow-lg">
-                      Emergency 24/7
+          {loading ? (
+             [...Array(3)].map((_, i) => (
+              <SwiperSlide key={i}>
+                <div className="h-[500px] bg-slate-100 rounded-[3.5rem] animate-pulse" />
+              </SwiperSlide>
+            ))
+          ) : (
+            hospitals.map((hospital) => (
+              <SwiperSlide key={hospital.id}>
+                <motion.div 
+                  whileHover={{ y: -15 }}
+                  className="bg-white rounded-[3.5rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.05)] border border-slate-100 h-full flex flex-col will-change-transform"
+                >
+                  <div className="relative h-72 overflow-hidden">
+                    <img 
+                      src={hospital.image} 
+                      alt={hospital.name} 
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    />
+                    <div className="absolute top-6 left-6 glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl">
+                      <Star size={16} className="text-amber-500 fill-amber-500" />
+                      <span className="text-sm font-black text-slate-900">{hospital.rating || "4.5"}</span>
                     </div>
-                  )}
-                </div>
-                
-                <div className="p-10 flex-grow flex flex-col">
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {(hospital.departments || ["Cardiology", "Neurology", "Pediatrics"]).slice(0, 2).map((dept) => (
-                      <span key={dept} className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
-                        {dept}
-                      </span>
-                    ))}
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-3 group-hover:text-primary transition-colors leading-tight">{hospital.name}</h3>
-                  <div className="flex items-center gap-2 text-slate-400 text-sm mb-6 font-medium">
-                    <MapPin size={16} className="text-primary" />
-                    <span>{hospital.location}</span>
+                    {hospital.emergency && (
+                      <div className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase animate-pulse shadow-lg">
+                        Emergency 24/7
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="mt-auto flex items-center justify-between pt-8 border-t border-slate-50">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full animate-pulse",
-                        (hospital.status || "Open") === "Open" ? "bg-green-500" : "bg-red-500"
-                      )} />
-                      <span className={cn(
-                        "text-xs font-black uppercase tracking-widest",
-                        (hospital.status || "Open") === "Open" ? "text-green-600" : "text-red-500"
-                      )}>
-                        {hospital.status || "Open"} Now
-                      </span>
+                  <div className="p-10 flex-grow flex flex-col">
+                    <div className="flex flex-wrap gap-2 mb-6 min-h-[32px]">
+                      {(hospitalSpecs[hospital.id] || []).length > 0 ? (
+                        hospitalSpecs[hospital.id].slice(0, 2).map((dept) => (
+                          <span key={dept} className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                            {dept}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-slate-400 italic">No specializations</span>
+                      )}
                     </div>
-                    <Link to={`/hospitals/${hospital.id}`}>
-                      <Button size="sm" variant="ghost" className="p-0 hover:bg-transparent hover:text-primary text-primary font-black uppercase tracking-widest text-xs gap-2">
-                        View Details <ArrowRight size={14} />
-                      </Button>
-                    </Link>
+                    <h3 className="text-2xl font-black text-slate-900 mb-3 group-hover:text-primary transition-colors leading-tight">{hospital.name}</h3>
+                    <div className="flex items-center gap-2 text-slate-400 text-sm mb-6 font-medium">
+                      <MapPin size={16} className="text-primary" />
+                      <span>{hospital.location}</span>
+                    </div>
+                    
+                    <div className="mt-auto flex items-center justify-between pt-8 border-t border-slate-50">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full animate-pulse",
+                          (hospital.status || "Open") === "Open" ? "bg-green-500" : "bg-red-500"
+                        )} />
+                        <span className={cn(
+                          "text-xs font-black uppercase tracking-widest",
+                          (hospital.status || "Open") === "Open" ? "text-green-600" : "text-red-500"
+                        )}>
+                          {hospital.status || "Open"} Now
+                        </span>
+                      </div>
+                      <Link to={`/hospitals/${hospital.id}`}>
+                        <Button size="sm" variant="ghost" className="p-0 hover:bg-transparent hover:text-primary text-primary font-black uppercase tracking-widest text-xs gap-2">
+                          View Details <ArrowRight size={14} />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </SwiperSlide>
-          ))}
+                </motion.div>
+              </SwiperSlide>
+            ))
+          )}
         </Swiper>
       </motion.div>
     </section>
   );
 };
+

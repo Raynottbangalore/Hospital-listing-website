@@ -10,7 +10,7 @@ export const CategoriesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [formData, setFormData] = useState({ name: "" });
 
   const fetchCategories = async () => {
     try {
@@ -39,7 +39,7 @@ export const CategoriesManagement = () => {
         toast.success("Category added successfully");
       }
       setIsModalOpen(false);
-      setFormData({ name: "", description: "" });
+      setFormData({ name: "" });
       setEditingId(null);
       fetchCategories();
     } catch (error) {
@@ -75,7 +75,7 @@ export const CategoriesManagement = () => {
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: "", description: "" });
+            setFormData({ name: "" });
             setIsModalOpen(true);
           }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
@@ -105,8 +105,7 @@ export const CategoriesManagement = () => {
                 <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4">
                   <Tags size={24} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1">{cat.name}</h3>
-                <p className="text-sm text-slate-500 line-clamp-2">{cat.description || "No description provided."}</p>
+                <h3 className="text-lg font-bold text-slate-900">{cat.name}</h3>
               </div>
               <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-50">
                 <button
@@ -167,15 +166,6 @@ export const CategoriesManagement = () => {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Cardiologist"
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Description (Optional)</label>
-                    <textarea
-                      rows={3}
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                     />
                   </div>
                 </form>

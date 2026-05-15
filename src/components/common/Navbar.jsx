@@ -76,9 +76,6 @@ export const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          <button className="p-2 text-slate-600 hover:text-primary transition-colors">
-            <Search size={20} />
-          </button>
           {currentUser ? (
             <>
               <Button onClick={handleLogout} variant="outline" size="sm" className="gap-2 text-red-500 hover:bg-red-50 hover:text-red-600 border-red-200">
