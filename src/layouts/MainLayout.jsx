@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import { Navbar } from "../components/common/Navbar";
 import { Footer } from "../components/common/Footer";
 import { FloatingElements } from "../components/common/FloatingElements";
+import { PatientChatWidget } from "../components/chat/PatientChatWidget";
+import { VideoConsultationRoom } from "../components/consultation/VideoConsultationRoom";
 import { motion, AnimatePresence } from "framer-motion";
 import Lenis from "lenis";
 
@@ -63,6 +65,8 @@ export const MainLayout = () => {
           </motion.div>
         </AnimatePresence>
       </main>
+      <PatientChatWidget />
+      <VideoConsultationRoom />
       <Footer />
     </div>
   );

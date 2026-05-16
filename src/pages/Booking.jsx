@@ -1,10 +1,10 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Hospital, User, Calendar, CreditCard, 
   CheckCircle, ArrowRight, ArrowLeft,
   Search, MapPin, Star, Clock, Briefcase, 
-  DollarSign, ChevronRight, Activity
+  DollarSign, ChevronRight, ChevronLeft, Activity
 } from "lucide-react";
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
@@ -34,6 +34,14 @@ export const Booking = () => {
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dateScrollRef = useRef(null);
+
+  const scrollDates = (direction) => {
+    if (dateScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -240 : 240;
+      dateScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
   
   const [selection, setSelection] = useState({
     hospital: location.state?.hospital || null,
@@ -210,6 +218,8 @@ export const Booking = () => {
         date: selection.date,
         time: selection.time,
         userId: currentUser.uid,
+        userEmail: currentUser.email,
+        consultationFee: String(selection.doctor.fee || "$50"),
         status: "Pending",
         createdAt: new Date().toISOString(),
       };
@@ -395,30 +405,62 @@ export const Booking = () => {
                     </div>
                     
                     <div className="space-y-6">
-                      <div className="space-y-4">
-                        <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Select Date</label>
-                        <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
-                          {[...Array(10)].map((_, i) => {
-                            const date = new Date();
-                            date.setDate(date.getDate() + i);
-                            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-                            const dayNum = date.getDate();
-                            const fullDate = date.toISOString().split('T')[0];
-                            
-                            return (
-                              <button 
-                                key={i} 
-                                onClick={() => setSelection({...selection, date: fullDate})}
-                                className={cn(
-                                  "flex-shrink-0 w-20 h-24 rounded-3xl flex flex-col items-center justify-center gap-2 border-2 transition-all shadow-sm",
-                                  selection.date === fullDate ? "bg-primary border-primary text-white shadow-primary/30 scale-105" : "bg-white border-transparent text-slate-500 hover:border-primary/30"
-                                )}
-                              >
-                                <span className="text-[10px] font-bold tracking-widest">{dayName}</span>
-                                <span className="text-2xl font-black">{dayNum}</span>
-                              </button>
-                            );
-                          })}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Select Date</label>
+                          <div className="flex items-center gap-1.5 hidden sm:flex">
+                            <button
+                              type="button"
+                              onClick={() => scrollDates('left')}
+                              className="w-8 h-8 rounded-full bg-slate-50 hover:bg-primary text-slate-600 hover:text-white flex items-center justify-center transition-all border border-slate-200 shadow-xs hover:shadow-md cursor-pointer"
+                              title="Scroll Left"
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => scrollDates('right')}
+                              className="w-8 h-8 rounded-full bg-slate-50 hover:bg-primary text-slate-600 hover:text-white flex items-center justify-center transition-all border border-slate-200 shadow-xs hover:shadow-md cursor-pointer"
+                              title="Scroll Right"
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="relative">
+                          <div 
+                            ref={dateScrollRef} 
+                            className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-4 pt-2 no-scrollbar scroll-smooth snap-x sm:snap-none"
+                          >
+                            {[...Array(10)].map((_, i) => {
+                              const date = new Date();
+                              date.setDate(date.getDate() + i);
+                              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                              const dayNum = date.getDate();
+                              const fullDate = date.toISOString().split('T')[0];
+                              const isWeekend = date.getDay() === 0;
+                              
+                              return (
+                                <button 
+                                  key={i} 
+                                  onClick={() => setSelection({...selection, date: fullDate})}
+                                  className={cn(
+                                    "flex-shrink-0 w-16 sm:w-20 h-20 sm:h-24 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center gap-1 sm:gap-1.5 border-2 transition-all shadow-xs snap-center focus:outline-none cursor-pointer select-none",
+                                    selection.date === fullDate 
+                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/30 scale-105" 
+                                      : isWeekend 
+                                      ? "bg-rose-50/50 border-rose-100 text-slate-600 hover:border-rose-300"
+                                      : "bg-white border-slate-100 text-slate-700 hover:border-primary/30"
+                                  )}
+                                >
+                                  <span className={cn("text-[10px] font-bold tracking-widest", selection.date === fullDate ? "text-primary-100" : isWeekend ? "text-rose-500 font-extrabold" : "text-slate-400")}>{dayName}</span>
+                                  <span className="text-xl sm:text-2xl font-black">{dayNum}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="absolute right-0 top-0 bottom-4 w-8 sm:w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none hidden sm:block" />
                         </div>
                       </div>
 
@@ -428,71 +470,100 @@ export const Booking = () => {
                           if (!selection.date) return <p className="text-sm text-slate-400 italic">Please select a date first</p>;
                           
                           const selectedDate = new Date(selection.date);
-                          const day = selectedDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-                          
-                          if (day === 0) {
+                          const dayShort = selectedDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+
+                          const defaultScheduleDays = {
+                            MON: { active: true, startTime: "09:00", endTime: "20:00" },
+                            TUE: { active: true, startTime: "09:00", endTime: "20:00" },
+                            WED: { active: true, startTime: "09:00", endTime: "20:00" },
+                            THU: { active: true, startTime: "09:00", endTime: "20:00" },
+                            FRI: { active: true, startTime: "09:00", endTime: "20:00" },
+                            SAT: { active: true, startTime: "09:00", endTime: "14:00" },
+                            SUN: { active: false, startTime: "09:00", endTime: "14:00" }
+                          };
+
+                          const schedule = selection.doctor?.schedule || {};
+                          const daysConfig = schedule.days || defaultScheduleDays;
+                          const todayConfig = daysConfig[dayShort] || defaultScheduleDays[dayShort];
+
+                          if (!todayConfig || !todayConfig.active) {
                             return (
-                              <div className="col-span-full py-6 text-center bg-red-50 rounded-2xl border border-red-100">
-                                <p className="text-red-500 font-bold">Closed on Sundays</p>
+                              <div className="col-span-full py-8 text-center bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-sm animate-in fade-in duration-300">
+                                <p className="text-slate-500 font-semibold">{selection.doctor?.name || "Specialist"} is not available for consultations on {selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}s.</p>
                               </div>
                             );
                           }
 
-                          const allSlots = ["09:00 AM", "10:30 AM", "12:00 PM", "02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM", "08:00 PM"];
-                          
-                          // Filter slots based on working hours
-                          const filteredSlots = allSlots.filter(time => {
-                            const [t, m] = time.split(' ');
-                            let [h] = t.split(':').map(Number);
-                            if (m === 'PM' && h !== 12) h += 12;
-                            if (m === 'AM' && h === 12) h = 0;
+                          const [startH, startM] = (todayConfig.startTime || "09:00").split(":").map(Number);
+                          const [endH, endM] = (todayConfig.endTime || "20:00").split(":").map(Number);
+                          const intervalMins = Number(schedule.slotDuration || 30);
 
-                            // Filter slots based on working hours
-                            if (day >= 1 && day <= 5) { // Mon-Fri: 9AM - 8PM
-                              return h >= 9 && h <= 20;
-                            } else if (day === 6) { // Sat: 9AM - 2PM
-                              return h >= 9 && h <= 14;
-                            }
-                            return false;
+                          const generatedSlots = [];
+                          let currentMins = startH * 60 + (startM || 0);
+                          let maxMins = endH * 60 + (endM || 0);
+
+                          if (maxMins <= currentMins) {
+                            maxMins += 24 * 60; // Handle midnight (12:00 AM = 00:00) or overnight shifts
+                          }
+
+                          while (currentMins + intervalMins <= maxMins) {
+                            const effectiveMins = currentMins % (24 * 60);
+                            const h = Math.floor(effectiveMins / 60);
+                            const m = effectiveMins % 60;
+                            const ampm = h >= 12 ? "PM" : "AM";
+                            const displayH = h % 12 === 0 ? 12 : h % 12;
+                            const timeStr = `${String(displayH).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+                            generatedSlots.push({ timeStr, slotH: h, slotM: m });
+                            currentMins += intervalMins;
+                          }
+
+                          const isToday = selection.date === new Date().toISOString().split('T')[0];
+                          const now = new Date();
+
+                          const availableSlots = generatedSlots.filter(slot => {
+                            if (!isToday) return true;
+                            const slotDate = new Date();
+                            slotDate.setHours(slot.slotH, slot.slotM, 0, 0);
+                            if (slot.slotH < startH) slotDate.setDate(slotDate.getDate() + 1); // Slot crossed midnight
+                            return slotDate > now;
                           });
 
-                          if (filteredSlots.length === 0) {
+                          if (generatedSlots.length === 0) {
                             return (
-                              <div className="col-span-full py-6 text-center bg-slate-50 rounded-2xl">
-                                <p className="text-slate-400">No available slots for this day.</p>
+                              <div className="col-span-full py-8 text-center bg-slate-50 rounded-3xl p-6 border border-slate-200">
+                                <p className="text-slate-500 font-semibold">No shift timings configured for this specialist.</p>
+                              </div>
+                            );
+                          }
+
+                          if (availableSlots.length === 0) {
+                            return (
+                              <div className="col-span-full py-8 text-center bg-amber-50 rounded-3xl border border-amber-200 p-6 space-y-2 shadow-sm animate-in fade-in duration-300">
+                                <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-2 shadow-sm">
+                                  <Clock size={24} />
+                                </div>
+                                <p className="text-amber-800 font-bold text-base sm:text-lg">All consultation slots for today have concluded.</p>
+                                <p className="text-amber-600 text-xs sm:text-sm font-medium max-w-md mx-auto leading-relaxed">
+                                  Please select tomorrow or another upcoming date from the calendar above to schedule your consultation.
+                                </p>
                               </div>
                             );
                           }
 
                           return (
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                              {filteredSlots.map((time, i) => {
-                                const isPast = selection.date === new Date().toISOString().split('T')[0] && (() => {
-                                  const now = new Date();
-                                  const [t, m] = time.split(' ');
-                                  let [h, min] = t.split(':').map(Number);
-                                  if (m === 'PM' && h !== 12) h += 12;
-                                  if (m === 'AM' && h === 12) h = 0;
-                                  const slot = new Date();
-                                  slot.setHours(h, min, 0, 0);
-                                  return slot < now;
-                                })();
-
-                                if (isPast) return null;
-
-                                return (
-                                  <button 
-                                    key={i} 
-                                    onClick={() => setSelection({...selection, time})} 
-                                    className={cn(
-                                      "py-4 rounded-2xl border-2 font-bold transition-all text-sm",
-                                      selection.time === time ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105" : "bg-white border-transparent text-slate-600 hover:border-primary/20"
-                                    )}
-                                  >
-                                    {time}
-                                  </button>
-                                );
-                              })}
+                              {availableSlots.map((slot, i) => (
+                                <button 
+                                  key={i} 
+                                  onClick={() => setSelection({...selection, time: slot.timeStr})} 
+                                  className={cn(
+                                    "py-4 rounded-2xl border-2 font-bold transition-all text-sm shadow-sm",
+                                    selection.time === slot.timeStr ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105" : "bg-white border-transparent text-slate-600 hover:border-primary/20"
+                                  )}
+                                >
+                                  {slot.timeStr}
+                                </button>
+                              ))}
                             </div>
                           );
                         })()}

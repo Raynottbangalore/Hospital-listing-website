@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Star, Clock, Briefcase, GraduationCap, MapPin, 
@@ -10,9 +10,15 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Button } from "../components/common/Button";
 import { fadeIn } from "../animations/variants";
+import { useAuth } from "../hooks/useAuth";
+import { useChat } from "../context/ChatContext";
+import toast from "react-hot-toast";
 
 export const DoctorProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { openChatWithDoctor, initiateVideoCall } = useChat();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +71,30 @@ export const DoctorProfile = () => {
     );
   }
 
+  const handleChatClick = () => {
+    if (!currentUser) {
+      toast("Please login to chat with the doctor", { icon: "🔒" });
+      navigate("/login");
+      return;
+    }
+    openChatWithDoctor({
+      id: doctor.id,
+      name: doctor.name,
+      image: doctor.image,
+      hospitalId: doctor.hospitalId,
+      hospitalName: doctor.hospitalName
+    });
+  };
+
+  const handleVideoClick = () => {
+    if (!currentUser) {
+      toast("Please login to initiate a video consultation", { icon: "🔒" });
+      navigate("/login");
+      return;
+    }
+    initiateVideoCall(doctor, currentUser);
+  };
+
   const stats = [
     { label: "Experience", value: doctor.experience + " Years", icon: Briefcase },
     { label: "Patients", value: "2,000+", icon: Heart },
@@ -108,10 +138,10 @@ export const DoctorProfile = () => {
                   </p>
                   
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
-                    <Button className="gap-2" size="sm">
+                    <Button onClick={handleVideoClick} className="gap-2" size="sm">
                       <Video size={18} /> Online Consultation
                     </Button>
-                    <Button variant="outline" className="gap-2" size="sm">
+                    <Button onClick={handleChatClick} variant="outline" className="gap-2" size="sm">
                       <MessageSquare size={18} /> Chat with Dr.
                     </Button>
                   </div>
@@ -221,27 +251,47 @@ export const DoctorProfile = () => {
                   <Clock size={18} className="text-primary" /> Working Hours
                 </h4>
                 {(() => {
+                  const defaultScheduleDays = {
+                    MON: { active: true, startTime: "09:00", endTime: "20:00" },
+                    TUE: { active: true, startTime: "09:00", endTime: "20:00" },
+                    WED: { active: true, startTime: "09:00", endTime: "20:00" },
+                    THU: { active: true, startTime: "09:00", endTime: "20:00" },
+                    FRI: { active: true, startTime: "09:00", endTime: "20:00" },
+                    SAT: { active: true, startTime: "09:00", endTime: "14:00" },
+                    SUN: { active: false, startTime: "09:00", endTime: "14:00" }
+                  };
+
                   const now = new Date();
-                  const day = now.getDay();
-                  const hour = now.getHours();
+                  const dayIndexMap = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+                  const todayCode = dayIndexMap[now.getDay()];
+                  const daysData = doctor.schedule?.days || defaultScheduleDays;
+                  const todayObj = daysData[todayCode];
+
                   let isOpen = false;
-                  
-                  if (day >= 1 && day <= 5) { // Mon-Fri: 9AM - 8PM
-                    if (hour >= 9 && hour < 20) isOpen = true;
-                  } else if (day === 6) { // Sat: 9AM - 2PM
-                    if (hour >= 9 && hour <= 14) isOpen = true;
+                  if (todayObj && todayObj.active) {
+                    let currentMins = now.getHours() * 60 + now.getMinutes();
+                    const [sH, sM] = (todayObj.startTime || "09:00").split(":").map(Number);
+                    const [eH, eM] = (todayObj.endTime || "20:00").split(":").map(Number);
+                    const startMins = sH * 60 + sM;
+                    let endMins = eH * 60 + eM;
+                    if (endMins <= startMins) {
+                      endMins += 24 * 60;
+                    }
+                    if (currentMins < startMins && endMins > 1440) {
+                      currentMins += 24 * 60;
+                    }
+                    if (currentMins >= startMins && currentMins <= endMins) {
+                      isOpen = true;
+                    }
                   }
 
-
-
-                  
                   return isOpen ? (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold animate-pulse">
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold animate-pulse shadow-xs">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                       Open Now
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold shadow-xs">
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                       Closed
                     </span>
@@ -249,22 +299,71 @@ export const DoctorProfile = () => {
                 })()}
               </div>
               
-              <div className="space-y-3">
-                {[
-                  { days: "Mon - Fri", hours: "09:00 AM - 08:00 PM", active: new Date().getDay() >= 1 && new Date().getDay() <= 5 },
-                  { days: "Saturday", hours: "09:00 AM - 02:00 PM", active: new Date().getDay() === 6 },
-                  { days: "Sunday", hours: "CLOSED", active: new Date().getDay() === 0, closed: true },
-                ].map((schedule, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`flex justify-between items-center p-2 rounded-xl transition-all ${schedule.active ? 'bg-white shadow-sm ring-1 ring-primary/20 scale-[1.02]' : 'opacity-70'}`}
-                  >
-                    <span className={`text-sm ${schedule.active ? 'font-bold text-slate-900' : 'text-slate-500'}`}>{schedule.days}</span>
-                    <span className={`text-sm ${schedule.closed ? 'text-red-500 font-bold uppercase tracking-widest text-xs' : schedule.active ? 'font-black text-primary' : 'font-bold text-slate-900'}`}>
-                      {schedule.hours}
-                    </span>
-                  </div>
-                ))}
+              <div className="space-y-2.5">
+                {(() => {
+                  const defaultScheduleDays = {
+                    MON: { active: true, startTime: "09:00", endTime: "20:00" },
+                    TUE: { active: true, startTime: "09:00", endTime: "20:00" },
+                    WED: { active: true, startTime: "09:00", endTime: "20:00" },
+                    THU: { active: true, startTime: "09:00", endTime: "20:00" },
+                    FRI: { active: true, startTime: "09:00", endTime: "20:00" },
+                    SAT: { active: true, startTime: "09:00", endTime: "14:00" },
+                    SUN: { active: false, startTime: "09:00", endTime: "14:00" }
+                  };
+
+                  const formatTime12h = (time24) => {
+                    if (!time24) return "";
+                    const [h, m] = time24.split(":").map(Number);
+                    const ampm = h >= 12 ? "PM" : "AM";
+                    const displayH = h % 12 === 0 ? 12 : h % 12;
+                    return `${String(displayH).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+                  };
+
+                  const now = new Date();
+                  const dayIndexMap = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+                  const todayCode = dayIndexMap[now.getDay()];
+                  const daysData = doctor.schedule?.days || defaultScheduleDays;
+
+                  const daysList = [
+                    { code: "MON", label: "Monday" },
+                    { code: "TUE", label: "Tuesday" },
+                    { code: "WED", label: "Wednesday" },
+                    { code: "THU", label: "Thursday" },
+                    { code: "FRI", label: "Friday" },
+                    { code: "SAT", label: "Saturday" },
+                    { code: "SUN", label: "Sunday" }
+                  ];
+
+                  return daysList.map(({ code, label }) => {
+                    const isToday = code === todayCode;
+                    const dayObj = daysData[code] || defaultScheduleDays[code];
+                    const hoursStr = dayObj.active ? `${formatTime12h(dayObj.startTime)} - ${formatTime12h(dayObj.endTime)}` : "CLOSED";
+
+                    return (
+                      <div 
+                        key={code} 
+                        className={`flex justify-between items-center px-3.5 py-2.5 rounded-2xl transition-all ${
+                          isToday 
+                            ? 'bg-white shadow-sm ring-2 ring-primary/30 scale-[1.02]' 
+                            : 'hover:bg-white/50'
+                        }`}
+                      >
+                        <span className={`text-sm ${isToday ? 'font-black text-slate-900' : 'font-semibold text-slate-600'}`}>
+                          {label} {isToday && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md ml-1 uppercase tracking-wider font-bold">Today</span>}
+                        </span>
+                        <span className={`text-sm ${
+                          !dayObj.active 
+                            ? 'text-red-500 font-bold uppercase tracking-widest text-xs' 
+                            : isToday 
+                            ? 'font-black text-primary' 
+                            : 'font-bold text-slate-800'
+                        }`}>
+                          {hoursStr}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
               <p className="mt-4 text-[10px] text-slate-400 text-center font-medium italic">
                 * Timings may vary on public holidays

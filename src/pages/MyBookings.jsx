@@ -97,89 +97,103 @@ export const MyBookings = () => {
         ) : (
           <div className="space-y-6">
             <AnimatePresence>
-              {appointments.map((apt, index) => (
-                <motion.div
-                  key={apt.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={cn(
-                    "glass p-6 md:p-8 rounded-[2.5rem] bg-white border border-white shadow-xl hover:border-primary/20 transition-all group overflow-hidden relative",
-                    apt.status === "Cancelled" && "opacity-60"
-                  )}
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
-                  
-                  <div className="flex flex-col md:flex-row gap-6 md:items-center relative z-10">
-                    {/* Doctor Info */}
-                    <div className="flex items-center gap-5 flex-grow">
-                      <div className="w-20 h-20 rounded-[1.5rem] bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                        <User size={32} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                            apt.status === "Confirmed" ? "bg-green-100 text-green-600" : 
-                            apt.status === "Cancelled" ? "bg-red-100 text-red-600" :
-                            "bg-amber-100 text-amber-600"
-                          )}>
-                            {apt.status || "Pending"}
-                          </span>
+              {appointments.map((apt, index) => {
+                const statusLower = (apt.status || "Pending").toLowerCase();
+                const isCompleted = statusLower === "completed";
+                const isConfirmed = statusLower === "confirmed";
+                const isCancelled = statusLower === "cancelled";
+
+                return (
+                  <motion.div
+                    key={apt.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={cn(
+                      "glass p-6 md:p-8 rounded-[2.5rem] bg-white border border-white shadow-xl hover:border-primary/20 transition-all group overflow-hidden relative",
+                      isCancelled && "opacity-60"
+                    )}
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+                    
+                    <div className="flex flex-col md:flex-row gap-6 md:items-center relative z-10">
+                      {/* Doctor Info */}
+                      <div className="flex items-center gap-5 flex-grow">
+                        <div className="w-20 h-20 rounded-[1.5rem] bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                          <User size={32} />
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors">
-                          {apt.doctorName}
-                        </h3>
-                        <p className="text-sm font-bold text-primary flex items-center gap-1 mt-0.5">
-                          <Activity size={14} /> {apt.category}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="hidden md:block w-px h-16 bg-slate-100" />
-
-                    {/* Details */}
-                    <div className="grid grid-cols-2 md:flex md:flex-col gap-4 md:gap-2 md:min-w-[200px]">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-                          <Hospital size={10} /> Hospital
-                        </p>
-                        <p className="text-sm font-bold text-slate-700">{apt.hospitalName}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-                          <Calendar size={10} /> Schedule
-                        </p>
-                        <p className="text-sm font-bold text-slate-900">
-                          {new Date(apt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          <span className="text-slate-400 font-medium ml-2">@ {apt.time}</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-                      {apt.status !== "Cancelled" ? (
-                        <Button 
-                          onClick={() => handleCancel(apt.id)}
-                          disabled={cancellingId === apt.id}
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 md:w-32 rounded-xl text-xs font-black border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200"
-                        >
-                          {cancellingId === apt.id ? "..." : "Cancel"}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2 text-red-500 px-4 py-2 bg-red-50 rounded-xl">
-                          <XCircle size={16} />
-                          <span className="text-xs font-black uppercase tracking-widest">Cancelled</span>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5",
+                              isCompleted ? "bg-green-100 text-green-700 border border-green-200/60" :
+                              isConfirmed ? "bg-blue-100 text-blue-700 border border-blue-200/60" : 
+                              isCancelled ? "bg-red-100 text-red-700 border border-red-200/60" :
+                              "bg-amber-100 text-amber-700 border border-amber-200/60"
+                            )}>
+                              {isCompleted && <CheckCircle2 size={12} className="text-green-600" />}
+                              {apt.status || "Pending"}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors">
+                            {apt.doctorName}
+                          </h3>
+                          <p className="text-sm font-bold text-primary flex items-center gap-1 mt-0.5">
+                            <Activity size={14} /> {apt.category}
+                          </p>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Divider */}
+                      <div className="hidden md:block w-px h-16 bg-slate-100" />
+
+                      {/* Details */}
+                      <div className="grid grid-cols-2 md:flex md:flex-col gap-4 md:gap-2 md:min-w-[200px]">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                            <Hospital size={10} /> Hospital
+                          </p>
+                          <p className="text-sm font-bold text-slate-700">{apt.hospitalName}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                            <Calendar size={10} /> Schedule
+                          </p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {new Date(apt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <span className="text-slate-400 font-medium ml-2">@ {apt.time}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
+                        {isCancelled ? (
+                          <div className="flex items-center gap-2 text-red-500 px-4 py-2 bg-red-50 rounded-xl border border-red-100">
+                            <XCircle size={16} />
+                            <span className="text-xs font-black uppercase tracking-widest">Cancelled</span>
+                          </div>
+                        ) : isCompleted ? (
+                          <div className="flex items-center gap-2 text-green-600 px-4 py-2 bg-green-50 rounded-xl font-bold border border-green-100">
+                            <CheckCircle2 size={16} />
+                            <span className="text-xs font-black uppercase tracking-widest">Completed</span>
+                          </div>
+                        ) : (
+                          <Button 
+                            onClick={() => handleCancel(apt.id)}
+                            disabled={cancellingId === apt.id}
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 md:w-32 rounded-xl text-xs font-black border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200"
+                          >
+                            {cancellingId === apt.id ? "..." : "Cancel"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}

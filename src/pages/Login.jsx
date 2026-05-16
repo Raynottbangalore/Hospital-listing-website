@@ -47,6 +47,8 @@ export const Login = () => {
 
       if (role === "admin") {
         navigate("/admin/dashboard");
+      } else if (role === "doctor") {
+        navigate("/doctor/dashboard");
       } else {
         navigate(from, { replace: true });
       }
@@ -74,6 +76,8 @@ export const Login = () => {
 
       if (role === "admin") {
         navigate("/admin/dashboard");
+      } else if (role === "doctor") {
+        navigate("/doctor/dashboard");
       } else {
         navigate(from, { replace: true });
       }

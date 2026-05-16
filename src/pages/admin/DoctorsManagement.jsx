@@ -5,6 +5,22 @@ import { db, storage } from "../../firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Edit2, Trash2, X, Stethoscope, User, MapPin, DollarSign, Clock, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import { createDoctorAuthUser } from "../../services/authService";
+
+const initialFormState = {
+  name: "",
+  email: "",
+  password: "",
+  category: "",
+  fee: "",
+  experience: "",
+  available: true,
+  about: "",
+  education: "",
+  qualifications: "",
+  image: "",
+  phone: "",
+};
 
 export const DoctorsManagement = () => {
   const [hospitals, setHospitals] = useState([]);
@@ -18,18 +34,7 @@ export const DoctorsManagement = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    fee: "",
-    experience: "",
-    available: true,
-    about: "",
-    education: "",
-    qualifications: "",
-    image: "",
-    phone: "",
-  });
+  const [formData, setFormData] = useState(initialFormState);
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -76,17 +81,54 @@ export const DoctorsManagement = () => {
         imageUrl = await getDownloadURL(snapshot.ref);
       }
 
-      const finalData = { ...formData, image: imageUrl };
+      const { email, password, ...restData } = formData;
+      const finalData = { ...restData, image: imageUrl, email: email || "" };
 
       if (editingId) {
         await updateDoc(doc(db, "hospitals", selectedHospital, "doctors", editingId), finalData);
-        toast.success("Doctor updated successfully");
+        if (!formData.userId && email && password) {
+          try {
+            const userId = await createDoctorAuthUser(email, password, {
+              name: formData.name,
+              hospitalId: selectedHospital,
+              doctorId: editingId
+            });
+            await updateDoc(doc(db, "hospitals", selectedHospital, "doctors", editingId), { userId, email });
+            toast.success("Doctor updated and credentials created successfully");
+          } catch (authErr) {
+            console.error("Auth creation on edit failed:", authErr);
+            toast.success("Doctor updated successfully");
+          }
+        } else {
+          toast.success("Doctor updated successfully");
+        }
       } else {
-        await addDoc(collection(db, "hospitals", selectedHospital, "doctors"), finalData);
-        toast.success("Doctor added successfully");
+        if (!email || !password) {
+          toast.error("Email and password are required for new doctors");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const docRef = await addDoc(collection(db, "hospitals", selectedHospital, "doctors"), finalData);
+        const doctorId = docRef.id;
+
+        try {
+          const userId = await createDoctorAuthUser(email, password, {
+            name: formData.name,
+            hospitalId: selectedHospital,
+            doctorId: doctorId
+          });
+
+          await updateDoc(docRef, { userId, email });
+        } catch (authErr) {
+          console.error("Doctor auth creation failed:", authErr);
+          toast.error("Doctor profile created, but auth registration failed.");
+        }
+
+        toast.success("Doctor added and credentials created successfully");
       }
       setIsModalOpen(false);
-      setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", education: "", qualifications: "", image: "", phone: "" });
+      setFormData(initialFormState);
       setImageFile(null);
       setEditingId(null);
       fetchDoctors(selectedHospital);
@@ -98,7 +140,7 @@ export const DoctorsManagement = () => {
   };
 
   const handleEdit = (doctor) => {
-    setFormData(doctor);
+    setFormData({ ...initialFormState, ...doctor, password: "" });
     setEditingId(doctor.id);
     setImageFile(null);
     setIsModalOpen(true);
@@ -132,7 +174,7 @@ export const DoctorsManagement = () => {
           disabled={!selectedHospital}
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: "", category: "", fee: "", experience: "", available: true, about: "", education: "", qualifications: "", image: "", phone: "" });
+            setFormData(initialFormState);
             setImageFile(null);
             setIsModalOpen(true);
           }}
@@ -293,6 +335,31 @@ export const DoctorsManagement = () => {
                       placeholder="Dr. John Doe"
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/20">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">Login Email <span className="text-red-500">*</span></label>
+                      <input
+                        type="email"
+                        required={!editingId}
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="doctor@hospital.com"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">Login Password {!editingId && <span className="text-red-500">*</span>}</label>
+                      <input
+                        type="password"
+                        required={!editingId}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={editingId ? "Leave blank to keep unchanged" : "••••••••"}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Specialization (Category)</label>

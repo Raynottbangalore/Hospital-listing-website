@@ -10,6 +10,7 @@ import {
   Users,
   Tags,
   Settings as SettingsIcon,
+  Image as ImageIcon,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const menuItems = [
   { path: "/admin/appointments", name: "Appointments", icon: CalendarDays },
   { path: "/admin/users", name: "Users", icon: Users },
   { path: "/admin/categories", name: "Categories", icon: Tags },
+  { path: "/admin/gallery", name: "Gallery", icon: ImageIcon },
   { path: "/admin/settings", name: "Settings", icon: SettingsIcon },
 ];
 

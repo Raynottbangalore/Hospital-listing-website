@@ -1,5 +1,7 @@
-import { auth, db } from "../firebase";
+import { auth, db, firebaseConfig } from "../firebase";
+import { initializeApp } from "firebase/app";
 import {
+  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -8,6 +10,34 @@ import {
   sendPasswordResetEmail
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+
+export const createDoctorAuthUser = async (email, password, doctorInfo) => {
+  try {
+    const appName = `SecondaryApp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const secondaryApp = initializeApp(firebaseConfig, appName);
+    const secondaryAuth = getAuth(secondaryApp);
+    
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = userCredential.user.uid;
+    
+    await signOut(secondaryAuth);
+
+    await setDoc(doc(db, "users", uid), {
+      uid: uid,
+      name: doctorInfo.name || "",
+      email: email,
+      role: "doctor",
+      hospitalId: doctorInfo.hospitalId || "",
+      doctorId: doctorInfo.doctorId || "",
+      createdAt: serverTimestamp()
+    });
+
+    return uid;
+  } catch (error) {
+    console.error("Error creating doctor auth user:", error);
+    throw error;
+  }
+};
 
 export const registerUser = async (email, password, name = "") => {
   try {

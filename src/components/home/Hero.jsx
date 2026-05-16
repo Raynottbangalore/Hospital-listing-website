@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, MapPin, Play, ShieldCheck, Star, Users } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 import { Button } from "../common/Button";
 import { fadeIn, staggerContainer } from "../../animations/variants";
 
@@ -9,6 +11,22 @@ export const Hero = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
+  const [heroImage, setHeroImage] = useState("/assets/images/hero.png");
+
+  useEffect(() => {
+    const fetchHeroSetting = async () => {
+      try {
+        const docRef = doc(db, "settings", "hero");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().url) {
+          setHeroImage(docSnap.data().url);
+        }
+      } catch (err) {
+        console.error("Error fetching hero setting:", err);
+      }
+    };
+    fetchHeroSetting();
+  }, []);
 
   const handleSearch = () => {
     navigate("/hospitals", { 
@@ -140,9 +158,9 @@ export const Hero = () => {
             className="relative mt-12 lg:mt-0"
           >
             {/* Main Hero Image */}
-            <div className="relative z-10 rounded-[2.5rem] md:rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border-[8px] md:border-[12px] border-white">
+            <div className="relative z-10 rounded-[2.5rem] md:rounded-[4rem] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border-[8px] md:border-[12px] border-white bg-slate-900/5">
               <img 
-                src="/assets/images/hero.png" 
+                src={heroImage} 
                 alt="Healthcare Excellence" 
                 className="w-full h-auto object-cover hover:scale-105 transition-transform duration-1000"
               />
