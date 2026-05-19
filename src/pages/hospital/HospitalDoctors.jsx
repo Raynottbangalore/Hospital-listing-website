@@ -2,27 +2,31 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
+import { useAuth } from "../../hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Edit2, Trash2, X, Building2, MapPin, Star, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Stethoscope, User, MapPin, DollarSign, Clock, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { createHospitalAuthUser, updateHospitalAuthCredentials } from "../../services/authService";
+import { createDoctorAuthUser, updateDoctorAuthCredentials } from "../../services/authService";
 
 const initialFormState = {
   name: "",
   email: "",
   password: "",
-  location: "",
-  image: "",
-  rating: "",
+  category: "",
+  fee: "",
+  experience: "",
+  available: true,
   about: "",
-  emergency: false,
-  contact: "",
-  userId: "",
+  education: "",
+  qualifications: "",
+  image: "",
+  phone: "",
 };
 
-
-export const HospitalsManagement = () => {
-  const [hospitals, setHospitals] = useState([]);
+export const HospitalDoctors = () => {
+  const { currentUser } = useAuth();
+  const [hospitalId, setHospitalId] = useState("");
+  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,29 +37,48 @@ export const HospitalsManagement = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const fetchHospitals = async () => {
+  const fetchHospitalIdAndDoctors = async () => {
+    if (!currentUser?.uid) return;
     try {
-      const querySnapshot = await getDocs(collection(db, "hospitals"));
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setHospitals(data);
+      const userDocSnap = await getDoc(doc(db, "users", currentUser.uid));
+      if (userDocSnap.exists()) {
+        const hId = userDocSnap.data().hospitalId;
+        setHospitalId(hId);
+        if (hId) {
+          fetchDoctors(hId);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching hospital ID:", err);
+      toast.error("Failed to load hospital context");
+    }
+  };
+
+  const fetchDoctors = async (hId) => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "hospitals", hId, "doctors"));
+      setDoctors(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      toast.error("Failed to fetch hospitals");
+      toast.error("Failed to load doctors");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchHospitals();
-  }, []);
+    fetchHospitalIdAndDoctors();
+  }, [currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!hospitalId) return toast.error("Hospital identity is missing");
+
     setIsSubmitting(true);
     try {
       let imageUrl = formData.image;
       if (imageFile) {
-        const imageRef = ref(storage, `hospitals/${Date.now()}_${imageFile.name}`);
+        const imageRef = ref(storage, `doctors/${Date.now()}_${imageFile.name}`);
         const snapshot = await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(snapshot.ref);
       }
@@ -64,18 +87,19 @@ export const HospitalsManagement = () => {
       const finalData = { ...restData, image: imageUrl, email: email || "" };
 
       if (editingId) {
-        await updateDoc(doc(db, "hospitals", editingId), finalData);
+        await updateDoc(doc(db, "hospitals", hospitalId, "doctors", editingId), finalData);
         if (!formData.userId && email && password) {
           try {
-            const userId = await createHospitalAuthUser(email, password, {
+            const userId = await createDoctorAuthUser(email, password, {
               name: formData.name,
-              hospitalId: editingId
+              hospitalId: hospitalId,
+              doctorId: editingId
             });
-            await updateDoc(doc(db, "hospitals", editingId), { userId, email });
-            toast.success("Hospital updated and credentials created successfully");
+            await updateDoc(doc(db, "hospitals", hospitalId, "doctors", editingId), { userId, email });
+            toast.success("Doctor updated and credentials created successfully");
           } catch (authErr) {
             console.error("Auth creation on edit failed:", authErr);
-            toast.success("Hospital updated successfully");
+            toast.success("Doctor updated successfully");
           }
         } else if (formData.userId) {
           try {
@@ -93,33 +117,33 @@ export const HospitalsManagement = () => {
             
             if (oldPassword) {
               if (targetEmail !== oldEmail || targetPassword !== oldPassword) {
-                const returnedUid = await updateHospitalAuthCredentials(oldEmail, oldPassword, targetEmail, targetPassword, formData.userId, editingId);
-                await updateDoc(doc(db, "hospitals", editingId), { userId: returnedUid, email: targetEmail, password: targetPassword });
-                toast.success("Hospital profile and login credentials updated successfully");
+                const returnedUid = await updateDoctorAuthCredentials(oldEmail, oldPassword, targetEmail, targetPassword, formData.userId, hospitalId, editingId);
+                await updateDoc(doc(db, "hospitals", hospitalId, "doctors", editingId), { userId: returnedUid, email: targetEmail, password: targetPassword });
+                toast.success("Doctor profile and login credentials updated successfully");
               } else {
-                toast.success("Hospital updated successfully");
+                toast.success("Doctor updated successfully");
               }
             } else {
               // Legacy account without password stored in Firestore
               if (targetEmail && targetPassword) {
                 try {
-                  const newUid = await createHospitalAuthUser(targetEmail, targetPassword, {
+                  const newUid = await createDoctorAuthUser(targetEmail, targetPassword, {
                     name: formData.name,
-                    hospitalId: editingId
+                    hospitalId: hospitalId,
+                    doctorId: editingId
                   });
-                  await updateDoc(doc(db, "hospitals", editingId), { userId: newUid, email: targetEmail, password: targetPassword });
-                  toast.success("Hospital credentials created and profile updated successfully");
+                  await updateDoc(doc(db, "hospitals", hospitalId, "doctors", editingId), { userId: newUid, email: targetEmail, password: targetPassword });
+                  toast.success("Doctor credentials created and profile updated successfully");
                 } catch (createErr) {
-                  // Fallback: save to Firestore documents
                   const updates = {};
                   if (targetEmail) updates.email = targetEmail;
                   if (targetPassword) updates.password = targetPassword;
                   await updateDoc(doc(db, "users", formData.userId), updates);
-                  await updateDoc(doc(db, "hospitals", editingId), updates);
-                  toast.success("Hospital profile updated and database credentials registered.");
+                  await updateDoc(doc(db, "hospitals", hospitalId, "doctors", editingId), updates);
+                  toast.success("Doctor profile updated and database credentials registered.");
                 }
               } else {
-                toast.success("Hospital updated successfully");
+                toast.success("Doctor updated successfully");
               }
             }
           } catch (authErr) {
@@ -127,73 +151,75 @@ export const HospitalsManagement = () => {
             toast.error("Profile updated, but failed to update authentication credentials.");
           }
         } else {
-          toast.success("Hospital updated successfully");
+          toast.success("Doctor updated successfully");
         }
       } else {
         if (!email || !password) {
-          toast.error("Email and password are required for new hospitals");
+          toast.error("Email and password are required for new doctors");
           setIsSubmitting(false);
           return;
         }
 
-        const docRef = await addDoc(collection(db, "hospitals"), finalData);
-        const hospitalId = docRef.id;
+        const docRef = await addDoc(collection(db, "hospitals", hospitalId, "doctors"), finalData);
+        const doctorId = docRef.id;
 
         try {
-          const userId = await createHospitalAuthUser(email, password, {
+          const userId = await createDoctorAuthUser(email, password, {
             name: formData.name,
-            hospitalId: hospitalId
+            hospitalId: hospitalId,
+            doctorId: doctorId
           });
+
           await updateDoc(docRef, { userId, email });
         } catch (authErr) {
-          console.error("Hospital auth creation failed:", authErr);
-          toast.error("Hospital created, but auth registration failed.");
+          console.error("Doctor auth creation failed:", authErr);
+          toast.error("Doctor profile created, but auth registration failed.");
         }
 
-        toast.success("Hospital added and credentials created successfully");
+        toast.success("Doctor added and credentials created successfully");
       }
       setIsModalOpen(false);
       setFormData(initialFormState);
       setImageFile(null);
       setEditingId(null);
-      fetchHospitals();
+      fetchDoctors(hospitalId);
     } catch (error) {
-      toast.error(editingId ? "Failed to update hospital" : "Failed to add hospital");
+      toast.error(editingId ? "Failed to update doctor" : "Failed to add doctor");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEdit = (hospital) => {
-    setFormData({ ...initialFormState, ...hospital, password: "" });
-    setEditingId(hospital.id);
+  const handleEdit = (doctor) => {
+    setFormData({ ...initialFormState, ...doctor, password: "" });
+    setEditingId(doctor.id);
     setImageFile(null);
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this hospital?")) {
+    if (window.confirm("Are you sure you want to delete this doctor?")) {
       try {
-        await deleteDoc(doc(db, "hospitals", id));
-        toast.success("Hospital deleted successfully");
-        fetchHospitals();
+        await deleteDoc(doc(db, "hospitals", hospitalId, "doctors", id));
+        toast.success("Doctor deleted successfully");
+        fetchDoctors(hospitalId);
       } catch (error) {
-        toast.error("Failed to delete hospital");
+        toast.error("Failed to delete doctor");
       }
     }
   };
 
-  const filteredHospitals = hospitals.filter(h => 
-    h.name?.toLowerCase().includes(search.toLowerCase()) || 
-    h.location?.toLowerCase().includes(search.toLowerCase())
+  const filteredDoctors = doctors.filter(d => 
+    d.name?.toLowerCase().includes(search.toLowerCase()) || 
+    d.category?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Hospitals</h1>
-          <p className="text-slate-500">Manage hospital listings across the platform</p>
+          <h1 className="text-2xl font-bold text-slate-900">Manage Doctors</h1>
+          <p className="text-slate-500">Add, edit, and manage medical professionals at your hospital</p>
         </div>
         <button
           onClick={() => {
@@ -204,7 +230,7 @@ export const HospitalsManagement = () => {
           }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
         >
-          <Plus size={20} /> Add Hospital
+          <Plus size={20} /> Add Doctor
         </button>
       </div>
 
@@ -214,7 +240,7 @@ export const HospitalsManagement = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
               type="text"
-              placeholder="Search hospitals..."
+              placeholder="Search doctors by name or category..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -226,9 +252,10 @@ export const HospitalsManagement = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Hospital</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Location</th>
-                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Rating</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Doctor</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Specialization</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Experience</th>
+                <th className="px-6 py-4 text-sm font-semibold text-slate-600">Fee</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">Status</th>
                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 text-right">Actions</th>
               </tr>
@@ -236,66 +263,57 @@ export const HospitalsManagement = () => {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
                     <div className="flex justify-center">
                       <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   </td>
                 </tr>
-              ) : filteredHospitals.length === 0 ? (
+              ) : filteredDoctors.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
-                    No hospitals found.
+                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
+                    No doctors found for this hospital.
                   </td>
                 </tr>
               ) : (
-                filteredHospitals.map((hospital) => (
-                  <tr key={hospital.id} className="hover:bg-slate-50/50 transition-colors">
+                filteredDoctors.map((doctor) => (
+                  <tr key={doctor.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {hospital.image ? (
-                          <img src={hospital.image} alt={hospital.name} className="w-10 h-10 rounded-lg object-cover" />
+                        {doctor.image ? (
+                          <img src={doctor.image} alt={doctor.name} className="w-10 h-10 rounded-full object-cover" />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                            <Building2 size={20} />
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <User size={20} />
                           </div>
                         )}
-                        <span className="font-semibold text-slate-900">{hospital.name}</span>
+                        <span className="font-semibold text-slate-900">{doctor.name}</span>
                       </div>
                     </td>
+                    <td className="px-6 py-4 text-slate-600">{doctor.category}</td>
+                    <td className="px-6 py-4 text-slate-600">{doctor.experience} yrs</td>
+                    <td className="px-6 py-4 text-slate-600">${doctor.fee}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <MapPin size={16} />
-                        {hospital.location}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        <Star size={16} fill="currentColor" />
-                        <span className="text-slate-700 font-medium">{hospital.rating}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {hospital.emergency ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                          <AlertCircle size={14} /> Emergency
+                      {doctor.available ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          Available
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                          Standard
+                          Unavailable
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={() => handleEdit(hospital)}
+                          onClick={() => handleEdit(doctor)}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
-                          onClick={() => handleDelete(hospital.id)}
+                          onClick={() => handleDelete(doctor.id)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 size={18} />
@@ -329,7 +347,7 @@ export const HospitalsManagement = () => {
             >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-xl font-bold text-slate-900">
-                  {editingId ? "Edit Hospital" : "Add New Hospital"}
+                  {editingId ? "Edit Doctor" : "Add New Doctor"}
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
@@ -340,15 +358,16 @@ export const HospitalsManagement = () => {
               </div>
 
               <div className="p-6 overflow-y-auto">
-                <form id="hospital-form" onSubmit={handleSubmit} className="space-y-4">
+                <form id="doctor-form" onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Hospital Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Doctor Name</label>
                     <input
-                       type="text"
-                       required
-                       value={formData.name}
-                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Dr. John Doe"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
                   </div>
 
@@ -358,9 +377,9 @@ export const HospitalsManagement = () => {
                       <input
                         type="email"
                         required={!editingId}
-                        value={formData.email || ""}
+                        value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="hospital@medifind.com"
+                        placeholder="doctor@hospital.com"
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
                       />
                     </div>
@@ -369,36 +388,63 @@ export const HospitalsManagement = () => {
                       <input
                         type="password"
                         required={!editingId}
-                        value={formData.password || ""}
+                        value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         placeholder={editingId ? "Leave blank to keep unchanged" : "••••••••"}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
                       />
                     </div>
                   </div>
+                  
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Specialization (Category)</label>
                     <input
                       type="text"
                       required
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g. Cardiologist"
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
                   </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
                     <input
                       type="tel"
                       required
-                      value={formData.contact}
-                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+1 (555) 000-0000"
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Consultation Fee ($)</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.fee}
+                        onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Experience (Years)</label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.experience}
+                        onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Hospital Image</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Doctor Image</label>
                     <div 
                       className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-all duration-200 ${dragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'}`}
                       onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -413,14 +459,14 @@ export const HospitalsManagement = () => {
                     >
                       <div className="space-y-2 text-center w-full">
                         {(imageFile || formData.image) ? (
-                          <div className="mx-auto flex justify-center mb-4 relative group">
+                          <div className="mx-auto flex justify-center mb-4 relative group w-max">
                             <img 
                               src={imageFile ? URL.createObjectURL(imageFile) : formData.image} 
                               alt="Preview" 
-                              className="h-32 object-cover rounded-lg shadow-sm border border-slate-200" 
+                              className="h-32 w-32 object-cover rounded-full shadow-sm border-2 border-slate-200" 
                             />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                              <span className="text-white text-sm font-medium">Click below to change</span>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-medium px-2 text-center">Click to change</span>
                             </div>
                           </div>
                         ) : (
@@ -446,42 +492,55 @@ export const HospitalsManagement = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Rating</label>
+
+                  <div className="flex items-center pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="5"
-                        required
-                        value={formData.rating}
-                        onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
-                        className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                        type="checkbox"
+                        checked={formData.available}
+                        onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
+                        className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
                       />
-                    </div>
-                    <div className="flex items-center pt-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.emergency}
-                          onChange={(e) => setFormData({ ...formData, emergency: e.target.checked })}
-                          className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                        />
-                        <span className="text-sm font-medium text-slate-700">Emergency Services</span>
-                      </label>
-                    </div>
+                      <span className="text-sm font-medium text-slate-700">Currently Available</span>
+                    </label>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">About</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">About Doctor</label>
                     <textarea
                       required
-                      rows={4}
+                      rows={3}
                       value={formData.about}
                       onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+                      placeholder="Brief description about the doctor's background and expertise..."
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Education</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={formData.education}
+                      onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                      placeholder="e.g. MBBS, MD in Cardiology"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Qualifications & Awards</label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={formData.qualifications}
+                      onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
+                      placeholder="e.g. Certified Heart Specialist, Best Doctor Award 2023"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    />
+                  </div>
+
                 </form>
               </div>
 
@@ -495,12 +554,12 @@ export const HospitalsManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  form="hospital-form"
+                  form="doctor-form"
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
                 >
                   {isSubmitting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                  {editingId ? "Save Changes" : "Add Hospital"}
+                  {editingId ? "Save Changes" : "Add Doctor"}
                 </button>
               </div>
             </motion.div>

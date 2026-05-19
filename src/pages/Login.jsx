@@ -49,6 +49,8 @@ export const Login = () => {
         navigate("/admin/dashboard");
       } else if (role === "doctor") {
         navigate("/doctor/dashboard");
+      } else if (role === "hospital") {
+        navigate("/hospital/dashboard");
       } else {
         navigate(from, { replace: true });
       }
@@ -78,6 +80,8 @@ export const Login = () => {
         navigate("/admin/dashboard");
       } else if (role === "doctor") {
         navigate("/doctor/dashboard");
+      } else if (role === "hospital") {
+        navigate("/hospital/dashboard");
       } else {
         navigate(from, { replace: true });
       }

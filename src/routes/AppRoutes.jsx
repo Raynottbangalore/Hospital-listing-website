@@ -35,6 +35,14 @@ import { DoctorProfileManagement } from "../pages/doctor/DoctorProfileManagement
 import { DoctorSettings } from "../pages/doctor/DoctorSettings";
 import { DoctorMessages } from "../pages/doctor/DoctorMessages";
 
+import { HospitalProtectedRoute } from "./HospitalProtectedRoute";
+import { HospitalLayout } from "../layouts/HospitalLayout";
+import { HospitalDashboard } from "../pages/hospital/HospitalDashboard";
+import { HospitalDoctors } from "../pages/hospital/HospitalDoctors";
+import { HospitalAppointments } from "../pages/hospital/HospitalAppointments";
+import { HospitalProfile } from "../pages/hospital/HospitalProfile";
+
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -83,6 +91,17 @@ export const AppRoutes = () => {
           <Route path="doctor/messages" element={<DoctorMessages />} />
           <Route path="doctor/profile" element={<DoctorProfileManagement />} />
           <Route path="doctor/settings" element={<DoctorSettings />} />
+        </Route>
+      </Route>
+
+      {/* Hospital Routes */}
+      <Route element={<HospitalProtectedRoute />}>
+        <Route element={<HospitalLayout />}>
+          <Route path="hospital" element={<Navigate to="/hospital/dashboard" replace />} />
+          <Route path="hospital/dashboard" element={<HospitalDashboard />} />
+          <Route path="hospital/doctors" element={<HospitalDoctors />} />
+          <Route path="hospital/appointments" element={<HospitalAppointments />} />
+          <Route path="hospital/profile" element={<HospitalProfile />} />
         </Route>
       </Route>
     </Routes>

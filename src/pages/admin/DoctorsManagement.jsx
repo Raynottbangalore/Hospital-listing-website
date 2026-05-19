@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Edit2, Trash2, X, Stethoscope, User, MapPin, DollarSign, Clock, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { createDoctorAuthUser } from "../../services/authService";
+import { createDoctorAuthUser, updateDoctorAuthCredentials } from "../../services/authService";
 
 const initialFormState = {
   name: "",
@@ -98,6 +98,55 @@ export const DoctorsManagement = () => {
           } catch (authErr) {
             console.error("Auth creation on edit failed:", authErr);
             toast.success("Doctor updated successfully");
+          }
+        } else if (formData.userId) {
+          try {
+            const userSnap = await getDoc(doc(db, "users", formData.userId));
+            let oldEmail = "";
+            let oldPassword = "";
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              oldEmail = userData.email || "";
+              oldPassword = userData.password || "";
+            }
+            
+            const targetPassword = password || oldPassword;
+            const targetEmail = email || oldEmail;
+            
+            if (oldPassword) {
+              if (targetEmail !== oldEmail || targetPassword !== oldPassword) {
+                const returnedUid = await updateDoctorAuthCredentials(oldEmail, oldPassword, targetEmail, targetPassword, formData.userId, selectedHospital, editingId);
+                await updateDoc(doc(db, "hospitals", selectedHospital, "doctors", editingId), { userId: returnedUid, email: targetEmail, password: targetPassword });
+                toast.success("Doctor profile and login credentials updated successfully");
+              } else {
+                toast.success("Doctor updated successfully");
+              }
+            } else {
+              // Legacy account without password stored in Firestore
+              if (targetEmail && targetPassword) {
+                try {
+                  const newUid = await createDoctorAuthUser(targetEmail, targetPassword, {
+                    name: formData.name,
+                    hospitalId: selectedHospital,
+                    doctorId: editingId
+                  });
+                  await updateDoc(doc(db, "hospitals", selectedHospital, "doctors", editingId), { userId: newUid, email: targetEmail, password: targetPassword });
+                  toast.success("Doctor credentials created and profile updated successfully");
+                } catch (createErr) {
+                  const updates = {};
+                  if (targetEmail) updates.email = targetEmail;
+                  if (targetPassword) updates.password = targetPassword;
+                  await updateDoc(doc(db, "users", formData.userId), updates);
+                  await updateDoc(doc(db, "hospitals", selectedHospital, "doctors", editingId), updates);
+                  toast.success("Doctor profile updated and database credentials registered.");
+                }
+              } else {
+                toast.success("Doctor updated successfully");
+              }
+            }
+          } catch (authErr) {
+            console.error("Credentials update on edit failed:", authErr);
+            toast.error("Profile updated, but failed to update authentication credentials.");
           }
         } else {
           toast.success("Doctor updated successfully");
