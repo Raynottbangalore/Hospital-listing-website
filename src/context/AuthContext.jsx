@@ -9,6 +9,8 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [userPermissions, setUserPermissions] = useState(null);
+  const [userAssignedHospitals, setUserAssignedHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,17 +21,26 @@ export const AuthProvider = ({ children }) => {
           const docRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
-            setUserRole(docSnap.data().role);
+            const data = docSnap.data();
+            setUserRole(data.role);
+            setUserPermissions(data.permissions || null);
+            setUserAssignedHospitals(data.assignedHospitals || []);
           } else {
             setUserRole("patient");
+            setUserPermissions(null);
+            setUserAssignedHospitals([]);
           }
         } catch (error) {
           console.error("Error fetching user role:", error);
           setUserRole("patient");
+          setUserPermissions(null);
+          setUserAssignedHospitals([]);
         }
       } else {
         setCurrentUser(null);
         setUserRole(null);
+        setUserPermissions(null);
+        setUserAssignedHospitals([]);
       }
       setLoading(false);
     });
@@ -39,6 +50,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     userRole,
+    userPermissions,
+    userAssignedHospitals,
     loading,
     register: registerUser,
     login: loginUser,

@@ -16,7 +16,7 @@ export const HospitalProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (userRole !== "hospital" && userRole !== "admin") {
+  if (userRole !== "hospital" && userRole !== "admin" && userRole !== "super_admin") {
     return <Navigate to="/unauthorized" replace />;
   }
 

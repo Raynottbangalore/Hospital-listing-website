@@ -16,6 +16,7 @@ export const Hospitals = () => {
   const [loading, setLoading] = useState(true);
   const [hospitals, setHospitals] = useState([]);
   const [hospitalSpecs, setHospitalSpecs] = useState({}); // hospitalId -> [specializations]
+  const [offers, setOffers] = useState([]);
   
   // Filter States
   const [searchQuery, setSearchQuery] = useState(location.state?.search || "");
@@ -28,7 +29,16 @@ export const Hospitals = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(db, "hospitals"));
+        const [querySnapshot, offersSnap] = await Promise.all([
+          getDocs(collection(db, "hospitals")),
+          getDocs(collection(db, "offers"))
+        ]);
+        
+        const activeOffers = offersSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(o => o.active);
+        setOffers(activeOffers);
+
         const hospitalData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setHospitals(hospitalData);
 
@@ -223,13 +233,17 @@ export const Hospitals = () => {
                 ))
               ) : (
                 <AnimatePresence>
-                  {filteredHospitals.map((hospital) => (
-                    <HospitalCard 
-                      key={hospital.id} 
-                      hospital={hospital} 
-                      specializations={hospitalSpecs[hospital.id] || []}
-                    />
-                  ))}
+                  {filteredHospitals.map((hospital) => {
+                    const hospitalOffer = offers.find(o => o.hospitalId === hospital.id) || offers.find(o => !o.hospitalId);
+                    return (
+                      <HospitalCard 
+                        key={hospital.id} 
+                        hospital={hospital} 
+                        specializations={hospitalSpecs[hospital.id] || []}
+                        offer={hospitalOffer}
+                      />
+                    );
+                  })}
                 </AnimatePresence>
               )}
             </div>

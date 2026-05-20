@@ -3,7 +3,7 @@ import { MapPin, Star, Clock, Phone, ArrowRight, ShieldCheck } from "lucide-reac
 import { Button } from "../common/Button";
 import { Link } from "react-router-dom";
 
-export const HospitalCard = ({ hospital, specializations = [] }) => {
+export const HospitalCard = ({ hospital, specializations = [], offer }) => {
   return (
     <motion.div
       layout
@@ -19,12 +19,17 @@ export const HospitalCard = ({ hospital, specializations = [] }) => {
           alt={hospital.name} 
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+        {offer && (
+          <div className="absolute top-4 left-4 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-lg z-10 flex items-center gap-1">
+            {offer.discount}
+          </div>
+        )}
+        <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full flex items-center gap-1 shadow-lg z-10">
           <Star size={16} className="text-amber-500 fill-amber-500" />
           <span className="text-sm font-bold text-slate-900">{hospital.rating || "4.5"}</span>
         </div>
         {hospital.emergency && (
-          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter animate-pulse">
+          <div className={`absolute ${offer ? 'top-12' : 'top-4'} left-4 bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter animate-pulse z-10 transition-all`}>
             24/7 EMERGENCY
           </div>
         )}

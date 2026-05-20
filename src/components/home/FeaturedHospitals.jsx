@@ -18,13 +18,23 @@ import "swiper/css/pagination";
 export const FeaturedHospitals = () => {
   const [hospitals, setHospitals] = useState([]);
   const [hospitalSpecs, setHospitalSpecs] = useState({}); // hospitalId -> [specializations]
+  const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(db, "hospitals"));
+        const [querySnapshot, offersSnap] = await Promise.all([
+          getDocs(collection(db, "hospitals")),
+          getDocs(collection(db, "offers"))
+        ]);
+        
+        const activeOffers = offersSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(o => o.active);
+        setOffers(activeOffers);
+
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const featured = data.slice(0, 6);
         setHospitals(featured);
@@ -112,12 +122,21 @@ export const FeaturedHospitals = () => {
                       loading="lazy"
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
-                    <div className="absolute top-6 left-6 glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl">
+                    {(() => {
+                      const offer = offers.find(o => o.hospitalId === hospital.id) || offers.find(o => !o.hospitalId);
+                      if (!offer) return null;
+                      return (
+                        <div className="absolute top-6 left-6 bg-primary text-white px-3 py-1.5 rounded-lg text-xs font-black shadow-lg z-10 flex items-center gap-1">
+                          {offer.discount}
+                        </div>
+                      );
+                    })()}
+                    <div className="absolute top-6 right-6 glass px-4 py-2 rounded-2xl flex items-center gap-2 shadow-xl z-10">
                       <Star size={16} className="text-amber-500 fill-amber-500" />
                       <span className="text-sm font-black text-slate-900">{hospital.rating || "4.5"}</span>
                     </div>
                     {hospital.emergency && (
-                      <div className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase animate-pulse shadow-lg">
+                      <div className={`absolute ${offers.some(o => o.hospitalId === hospital.id || !o.hospitalId) ? 'top-16' : 'top-6'} left-6 bg-red-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-[0.2em] uppercase animate-pulse shadow-lg z-10 transition-all`}>
                         Emergency 24/7
                       </div>
                     )}

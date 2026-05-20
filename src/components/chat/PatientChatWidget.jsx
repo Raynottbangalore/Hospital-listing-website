@@ -28,7 +28,7 @@ export const PatientChatWidget = () => {
   const navigate = useNavigate();
 
   // If user is doctor or admin, don't show patient widget
-  if (userRole === "doctor" || userRole === "admin") {
+  if (userRole === "doctor" || userRole === "admin" || userRole === "super_admin") {
     return null;
   }
 

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, Edit2, Trash2, X, Building2, MapPin, Star, AlertCircle, Image as ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { createHospitalAuthUser, updateHospitalAuthCredentials } from "../../services/authService";
+import { useAuth } from "../../hooks/useAuth";
 
 const initialFormState = {
   name: "",
@@ -33,10 +34,17 @@ export const HospitalsManagement = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
+  const { userRole, userAssignedHospitals } = useAuth();
+
   const fetchHospitals = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "hospitals"));
-      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (userRole === "admin" && userAssignedHospitals && userAssignedHospitals.length > 0) {
+        data = data.filter(h => userAssignedHospitals.includes(h.id));
+      }
+
       setHospitals(data);
     } catch (error) {
       toast.error("Failed to fetch hospitals");
@@ -369,11 +377,13 @@ export const HospitalsManagement = () => {
                       <input
                         type="password"
                         required={!editingId}
+                        minLength={6}
                         value={formData.password || ""}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder={editingId ? "Leave blank to keep unchanged" : "••••••••"}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
+                        placeholder={editingId ? "Leave blank to keep unchanged" : "Min. 6 characters"}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm mb-1"
                       />
+                      <p className="text-[10px] text-slate-500 italic">Firebase requires at least 6 characters.</p>
                     </div>
                   </div>
                   <div>

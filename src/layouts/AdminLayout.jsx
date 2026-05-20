@@ -16,23 +16,29 @@ import {
   X,
   Bell,
   Search,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  Percent,
+  BarChart
 } from "lucide-react";
 
-const menuItems = [
-  { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard },
-  { path: "/admin/hospitals", name: "Hospitals", icon: Building2 },
-  { path: "/admin/doctors", name: "Doctors", icon: Stethoscope },
-  { path: "/admin/appointments", name: "Appointments", icon: CalendarDays },
-  { path: "/admin/users", name: "Users", icon: Users },
-  { path: "/admin/categories", name: "Categories", icon: Tags },
-  { path: "/admin/gallery", name: "Gallery", icon: ImageIcon },
-  { path: "/admin/settings", name: "Settings", icon: SettingsIcon },
+const allMenuItems = [
+  { path: "/admin/dashboard", name: "Dashboard", icon: LayoutDashboard, permissionKey: "dashboard" },
+  { path: "/admin/hospitals", name: "Hospitals", icon: Building2, permissionKey: "hospitals" },
+  { path: "/admin/doctors", name: "Doctors", icon: Stethoscope, permissionKey: "doctors" },
+  { path: "/admin/appointments", name: "Appointments", icon: CalendarDays, permissionKey: "appointments" },
+  { path: "/admin/users", name: "Users", icon: Users, permissionKey: "users" },
+  { path: "/admin/offers", name: "Offers", icon: Percent, permissionKey: "offers" },
+  { path: "/admin/analytics", name: "Analytics", icon: BarChart, permissionKey: "analytics" },
+  { path: "/admin/categories", name: "Categories", icon: Tags, permissionKey: "categories" },
+  { path: "/admin/gallery", name: "Gallery", icon: ImageIcon, permissionKey: "gallery" },
+  { path: "/admin/settings", name: "Settings", icon: SettingsIcon, permissionKey: "settings" },
+  { path: "/admin/admin-management", name: "Admin Management", icon: ShieldCheck, permissionKey: "admins", superAdminOnly: true },
 ];
 
 export const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { logout, currentUser } = useAuth();
+  const { logout, currentUser, userRole, userPermissions } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,7 +47,13 @@ export const AdminLayout = () => {
     navigate("/login", { replace: true });
   };
 
-  const currentMenu = menuItems.find(item => item.path === location.pathname) || { name: "Admin Panel" };
+  const filteredMenuItems = allMenuItems.filter(item => {
+    if (userRole === "super_admin") return true;
+    if (item.superAdminOnly) return false;
+    return userPermissions && userPermissions[item.permissionKey];
+  });
+
+  const currentMenu = allMenuItems.find(item => item.path === location.pathname) || { name: "Admin Panel" };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-200">
@@ -69,7 +81,9 @@ export const AdminLayout = () => {
             <div className="bg-primary p-2 rounded-xl">
               <Stethoscope className="text-white" size={24} />
             </div>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">Admin</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white">
+              {userRole === "super_admin" ? "Super Admin" : "Admin"}
+            </span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -80,7 +94,7 @@ export const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

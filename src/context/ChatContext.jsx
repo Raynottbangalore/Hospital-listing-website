@@ -36,7 +36,7 @@ export const ChatProvider = ({ children }) => {
 
   // Listen to patient's chats and call status
   useEffect(() => {
-    if (!currentUser || userRole === "doctor" || userRole === "admin") {
+    if (!currentUser || userRole === "doctor" || userRole === "admin" || userRole === "super_admin") {
       setPatientChats([]);
       setUnreadPatientCount(0);
       return;

@@ -39,14 +39,35 @@ export const Login = () => {
       const docRef = doc(db, "users", userCredential.user.uid);
       const docSnap = await getDoc(docRef);
       let role = "patient";
+      let permissions = {};
       if (docSnap.exists()) {
-        role = docSnap.data().role;
+        const data = docSnap.data();
+        role = data.role;
+        permissions = data.permissions || {};
+      }
+
+      if (role === "disabled") {
+        const { getAuth, signOut } = await import("firebase/auth");
+        await signOut(getAuth());
+        throw { code: "auth/user-disabled", message: "This account's credentials have been changed. Please use the new credentials." };
       }
 
       const from = location.state?.from?.pathname || "/";
 
-      if (role === "admin") {
+      if (role === "super_admin") {
         navigate("/admin/dashboard");
+      } else if (role === "admin") {
+        if (permissions.dashboard) navigate("/admin/dashboard");
+        else if (permissions.hospitals) navigate("/admin/hospitals");
+        else if (permissions.doctors) navigate("/admin/doctors");
+        else if (permissions.appointments) navigate("/admin/appointments");
+        else if (permissions.offers) navigate("/admin/offers");
+        else if (permissions.users) navigate("/admin/users");
+        else if (permissions.analytics) navigate("/admin/analytics");
+        else if (permissions.categories) navigate("/admin/categories");
+        else if (permissions.gallery) navigate("/admin/gallery");
+        else if (permissions.settings) navigate("/admin/settings");
+        else navigate("/unauthorized");
       } else if (role === "doctor") {
         navigate("/doctor/dashboard");
       } else if (role === "hospital") {
@@ -70,14 +91,35 @@ export const Login = () => {
       const docRef = doc(db, "users", userCredential.user.uid);
       const docSnap = await getDoc(docRef);
       let role = "patient";
+      let permissions = {};
       if (docSnap.exists()) {
-        role = docSnap.data().role;
+        const data = docSnap.data();
+        role = data.role;
+        permissions = data.permissions || {};
+      }
+
+      if (role === "disabled") {
+        const { getAuth, signOut } = await import("firebase/auth");
+        await signOut(getAuth());
+        throw { code: "auth/user-disabled", message: "This account's credentials have been changed. Please use the new credentials." };
       }
 
       const from = location.state?.from?.pathname || "/";
 
-      if (role === "admin") {
+      if (role === "super_admin") {
         navigate("/admin/dashboard");
+      } else if (role === "admin") {
+        if (permissions.dashboard) navigate("/admin/dashboard");
+        else if (permissions.hospitals) navigate("/admin/hospitals");
+        else if (permissions.doctors) navigate("/admin/doctors");
+        else if (permissions.appointments) navigate("/admin/appointments");
+        else if (permissions.offers) navigate("/admin/offers");
+        else if (permissions.users) navigate("/admin/users");
+        else if (permissions.analytics) navigate("/admin/analytics");
+        else if (permissions.categories) navigate("/admin/categories");
+        else if (permissions.gallery) navigate("/admin/gallery");
+        else if (permissions.settings) navigate("/admin/settings");
+        else navigate("/unauthorized");
       } else if (role === "doctor") {
         navigate("/doctor/dashboard");
       } else if (role === "hospital") {

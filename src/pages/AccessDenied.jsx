@@ -24,7 +24,7 @@ export const AccessDenied = () => {
 
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">Access Denied</h1>
         <p className="text-slate-500 font-medium mb-8 text-lg">
-          You don't have permission to view this page. This area is restricted to administrators only.
+          You do not have permission to access this page.
         </p>
 
         <Link to="/">

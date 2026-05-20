@@ -16,7 +16,7 @@ export const DoctorProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (userRole !== "doctor" && userRole !== "admin") {
+  if (userRole !== "doctor" && userRole !== "admin" && userRole !== "super_admin") {
     // Note: Allowing admin as well if needed, or strictly doctor
     return <Navigate to="/unauthorized" replace />;
   }

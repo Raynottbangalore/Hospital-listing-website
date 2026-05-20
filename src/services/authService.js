@@ -121,6 +121,15 @@ export const updateHospitalAuthCredentials = async (oldEmail, oldPassword, newEm
           createdAt: serverTimestamp()
         });
 
+        // Invalidate the old user document so the old login loses dashboard access
+        if (uid) {
+          try {
+            await setDoc(doc(db, "users", uid), { role: "disabled" }, { merge: true });
+          } catch (e) {
+            console.error("Failed to invalidate old user doc", e);
+          }
+        }
+
         return newUid;
       } catch (createErr) {
         console.error("Self-healing credential creation failed:", createErr);
@@ -182,6 +191,15 @@ export const updateDoctorAuthCredentials = async (oldEmail, oldPassword, newEmai
           password: newPassword,
           createdAt: serverTimestamp()
         });
+
+        // Invalidate the old user document so the old login loses dashboard access
+        if (uid) {
+          try {
+            await setDoc(doc(db, "users", uid), { role: "disabled" }, { merge: true });
+          } catch (e) {
+            console.error("Failed to invalidate old user doc", e);
+          }
+        }
 
         return newUid;
       } catch (createErr) {

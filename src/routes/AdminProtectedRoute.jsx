@@ -16,7 +16,7 @@ export const AdminProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (userRole !== "admin") {
+  if (userRole !== "admin" && userRole !== "super_admin") {
     return <Navigate to="/unauthorized" replace />;
   }
 

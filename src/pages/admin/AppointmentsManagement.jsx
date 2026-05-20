@@ -3,6 +3,7 @@ import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firesto
 import { db } from "../../firebase";
 import { Search, Trash2, CalendarDays, User, Clock, MapPin, CheckCircle, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../../hooks/useAuth";
 
 export const AppointmentsManagement = () => {
   const [appointments, setAppointments] = useState([]);
@@ -10,10 +11,17 @@ export const AppointmentsManagement = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
+  const { userRole, userAssignedHospitals } = useAuth();
+
   const fetchAppointments = async () => {
     try {
       const snap = await getDocs(collection(db, "appointments"));
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      if (userRole === "admin" && userAssignedHospitals && userAssignedHospitals.length > 0) {
+        data = data.filter(a => userAssignedHospitals.includes(a.hospitalId));
+      }
+      
       // Sort by date/time ideally, but let's just reverse for now
       setAppointments(data.reverse());
     } catch (error) {

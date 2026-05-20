@@ -7,6 +7,8 @@ import { Plus, Search, Edit2, Trash2, X, Stethoscope, User, MapPin, DollarSign, 
 import toast from "react-hot-toast";
 import { createDoctorAuthUser, updateDoctorAuthCredentials } from "../../services/authService";
 
+import { useAuth } from "../../hooks/useAuth";
+
 const initialFormState = {
   name: "",
   email: "",
@@ -23,6 +25,7 @@ const initialFormState = {
 };
 
 export const DoctorsManagement = () => {
+  const { userRole, userAssignedHospitals } = useAuth();
   const [hospitals, setHospitals] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState("");
   const [doctors, setDoctors] = useState([]);
@@ -40,13 +43,19 @@ export const DoctorsManagement = () => {
     const fetchHospitals = async () => {
       try {
         const snap = await getDocs(collection(db, "hospitals"));
-        setHospitals(snap.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+        let data = snap.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+        
+        if (userRole === "admin" && userAssignedHospitals && userAssignedHospitals.length > 0) {
+          data = data.filter(h => userAssignedHospitals.includes(h.id));
+        }
+
+        setHospitals(data);
       } catch (error) {
         toast.error("Failed to load hospitals");
       }
     };
     fetchHospitals();
-  }, []);
+  }, [userRole, userAssignedHospitals]);
 
   const fetchDoctors = async (hospitalId) => {
     if (!hospitalId) {
@@ -403,11 +412,13 @@ export const DoctorsManagement = () => {
                       <input
                         type="password"
                         required={!editingId}
+                        minLength={6}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder={editingId ? "Leave blank to keep unchanged" : "••••••••"}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm"
+                        placeholder={editingId ? "Leave blank to keep unchanged" : "Min. 6 characters"}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-white text-sm mb-1"
                       />
+                      <p className="text-[10px] text-slate-500 italic">Firebase requires at least 6 characters.</p>
                     </div>
                   </div>
                   <div>

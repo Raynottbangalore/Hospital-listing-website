@@ -27,6 +27,11 @@ import { CategoriesManagement } from "../pages/admin/CategoriesManagement";
 import { GalleryManagement } from "../pages/admin/GalleryManagement";
 import { Settings } from "../pages/admin/Settings";
 
+import { AdminPermissionRoute } from "./AdminPermissionRoute";
+import { AdminManagement } from "../pages/admin/AdminManagement";
+import { OffersManagement } from "../pages/admin/OffersManagement";
+import { Analytics } from "../pages/admin/Analytics";
+
 import { DoctorProtectedRoute } from "./DoctorProtectedRoute";
 import { DoctorLayout } from "../layouts/DoctorLayout";
 import { DoctorDashboard } from "../pages/doctor/DoctorDashboard";
@@ -54,7 +59,7 @@ export const AppRoutes = () => {
         <Route path="doctors/:id" element={<DoctorProfile />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
-        
+
         <Route element={<ProtectedRoute />}>
           <Route path="booking" element={<Booking />} />
           <Route path="dashboard" element={<MyBookings />} />
@@ -66,19 +71,49 @@ export const AppRoutes = () => {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="unauthorized" element={<AccessDenied />} />
-      
+
       {/* Admin Routes */}
       <Route element={<AdminProtectedRoute />}>
         <Route element={<AdminLayout />}>
           <Route path="admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="admin/dashboard" element={<AdminDashboard />} />
-          <Route path="admin/hospitals" element={<HospitalsManagement />} />
-          <Route path="admin/doctors" element={<DoctorsManagement />} />
-          <Route path="admin/appointments" element={<AppointmentsManagement />} />
-          <Route path="admin/users" element={<UsersManagement />} />
-          <Route path="admin/categories" element={<CategoriesManagement />} />
-          <Route path="admin/gallery" element={<GalleryManagement />} />
-          <Route path="admin/settings" element={<Settings />} />
+
+          <Route element={<AdminPermissionRoute permissionKey="dashboard" />}>
+            <Route path="admin/dashboard" element={<AdminDashboard />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="hospitals" />}>
+            <Route path="admin/hospitals" element={<HospitalsManagement />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="doctors" />}>
+            <Route path="admin/doctors" element={<DoctorsManagement />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="appointments" />}>
+            <Route path="admin/appointments" element={<AppointmentsManagement />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="users" />}>
+            <Route path="admin/users" element={<UsersManagement />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="offers" />}>
+            <Route path="admin/offers" element={<OffersManagement />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="analytics" />}>
+            <Route path="admin/analytics" element={<Analytics />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute permissionKey="settings" />}>
+            <Route path="admin/categories" element={<CategoriesManagement />} />
+            <Route path="admin/gallery" element={<GalleryManagement />} />
+            <Route path="admin/settings" element={<Settings />} />
+          </Route>
+
+          <Route element={<AdminPermissionRoute requireSuperAdmin={true} />}>
+            <Route path="admin/admin-management" element={<AdminManagement />} />
+          </Route>
         </Route>
       </Route>
 
