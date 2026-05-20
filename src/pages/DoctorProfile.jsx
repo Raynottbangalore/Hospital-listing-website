@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Star, Clock, Briefcase, GraduationCap, MapPin, 
-  MessageSquare, Video, Calendar, ArrowLeft,
+  MessageSquare, Calendar, ArrowLeft,
   ShieldCheck, Award, Heart
 } from "lucide-react";
 import { collection, getDocs } from "firebase/firestore";
@@ -18,7 +18,7 @@ export const DoctorProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { openChatWithDoctor, initiateVideoCall } = useChat();
+  const { openChatWithDoctor } = useChat();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -86,15 +86,6 @@ export const DoctorProfile = () => {
     });
   };
 
-  const handleVideoClick = () => {
-    if (!currentUser) {
-      toast("Please login to initiate a video consultation", { icon: "🔒" });
-      navigate("/login");
-      return;
-    }
-    initiateVideoCall(doctor, currentUser);
-  };
-
   const stats = [
     { label: "Experience", value: doctor.experience + " Years", icon: Briefcase },
     { label: "Patients", value: "2,000+", icon: Heart },
@@ -138,9 +129,6 @@ export const DoctorProfile = () => {
                   </p>
                   
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
-                    <Button onClick={handleVideoClick} className="gap-2" size="sm">
-                      <Video size={18} /> Online Consultation
-                    </Button>
                     <Button onClick={handleChatClick} variant="outline" className="gap-2" size="sm">
                       <MessageSquare size={18} /> Chat with Dr.
                     </Button>
