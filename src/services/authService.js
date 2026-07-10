@@ -215,7 +215,7 @@ export const updateDoctorAuthCredentials = async (oldEmail, oldPassword, newEmai
 
 
 
-export const registerUser = async (email, password, name = "") => {
+export const registerUser = async (email, password, name = "", additionalData = {}) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -225,6 +225,7 @@ export const registerUser = async (email, password, name = "") => {
       name: name || user.displayName || "",
       email: user.email,
       role: "patient",
+      ...additionalData,
       createdAt: serverTimestamp()
     });
 

@@ -46,7 +46,8 @@ export const HospitalDetails = () => {
             return cat;
           }))].filter(Boolean);
           
-          setSpecializations(derivedSpecs.length > 0 ? derivedSpecs : (hospitalData.departments || []));
+          const combinedSpecs = [...new Set([...derivedSpecs, ...(hospitalData.departments || [])])];
+          setSpecializations(combinedSpecs);
         } else {
           console.error("No such hospital!");
         }
@@ -163,9 +164,9 @@ export const HospitalDetails = () => {
 
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <h4 className="font-bold text-slate-900 mb-4">Facilities</h4>
+                  <h4 className="font-bold text-slate-900 mb-4">Clinic Features</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    {(hospital.facilities || ["24/7 Emergency", "Pharmacy", "ICU", "Laboratory"]).map(item => (
+                    {((hospital.features && hospital.features.length > 0) ? hospital.features : (hospital.facilities || ["24/7 Emergency", "Pharmacy", "ICU", "Laboratory"])).map(item => (
                       <div key={item} className="flex items-center gap-2 text-slate-600">
                         <CheckCircle2 size={16} className="text-green-500" />
                         <span className="text-sm font-medium">{item}</span>
@@ -174,7 +175,7 @@ export const HospitalDetails = () => {
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 mb-4">Specializations</h4>
+                  <h4 className="font-bold text-slate-900 mb-4">Departments & Specializations</h4>
                   <div className="flex flex-wrap gap-2">
                     {specializations.length > 0 ? (
                       specializations.map(dept => (
@@ -183,10 +184,23 @@ export const HospitalDetails = () => {
                         </span>
                       ))
                     ) : (
-                      <span className="text-slate-400 text-sm italic">No specializations listed</span>
+                      <span className="text-slate-400 text-sm italic">No departments listed</span>
                     )}
                   </div>
                 </div>
+                {(hospital.qualities && hospital.qualities.length > 0) && (
+                  <div className="md:col-span-2">
+                    <h4 className="font-bold text-slate-900 mb-4">Hospital Qualities</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {hospital.qualities.map(quality => (
+                        <span key={quality} className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-sm font-bold border border-primary/20 flex items-center gap-2">
+                          <Star size={16} />
+                          {quality}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

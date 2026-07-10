@@ -19,6 +19,9 @@ const initialFormState = {
   emergency: false,
   contact: "",
   userId: "",
+  departments: "",
+  qualities: "",
+  features: "",
 };
 
 
@@ -69,7 +72,14 @@ export const HospitalsManagement = () => {
       }
 
       const { email, password, ...restData } = formData;
-      const finalData = { ...restData, image: imageUrl, email: email || "" };
+      const finalData = { 
+        ...restData, 
+        image: imageUrl, 
+        email: email || "",
+        departments: typeof formData.departments === 'string' ? formData.departments.split(',').map(s => s.trim()).filter(Boolean) : formData.departments,
+        qualities: typeof formData.qualities === 'string' ? formData.qualities.split(',').map(s => s.trim()).filter(Boolean) : formData.qualities,
+        features: typeof formData.features === 'string' ? formData.features.split(',').map(s => s.trim()).filter(Boolean) : formData.features,
+      };
 
       if (editingId) {
         await updateDoc(doc(db, "hospitals", editingId), finalData);
@@ -173,7 +183,14 @@ export const HospitalsManagement = () => {
   };
 
   const handleEdit = (hospital) => {
-    setFormData({ ...initialFormState, ...hospital, password: "" });
+    setFormData({ 
+      ...initialFormState, 
+      ...hospital, 
+      password: "",
+      departments: Array.isArray(hospital.departments) ? hospital.departments.join(', ') : (hospital.departments || ""),
+      qualities: Array.isArray(hospital.qualities) ? hospital.qualities.join(', ') : (hospital.qualities || ""),
+      features: Array.isArray(hospital.features) ? hospital.features.join(', ') : (hospital.features || ""),
+    });
     setEditingId(hospital.id);
     setImageFile(null);
     setIsModalOpen(true);
@@ -490,6 +507,36 @@ export const HospitalsManagement = () => {
                       value={formData.about}
                       onChange={(e) => setFormData({ ...formData, about: e.target.value })}
                       className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Departments (Comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.departments}
+                      onChange={(e) => setFormData({ ...formData, departments: e.target.value })}
+                      placeholder="e.g. Cardiology, Neurology, Orthopedics"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Qualities (Comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.qualities}
+                      onChange={(e) => setFormData({ ...formData, qualities: e.target.value })}
+                      placeholder="e.g. Certified Doctors, Advanced Tech"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Clinic Features (Comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.features}
+                      onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                      placeholder="e.g. 24/7 Pharmacy, Parking"
+                      className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                     />
                   </div>
                 </form>

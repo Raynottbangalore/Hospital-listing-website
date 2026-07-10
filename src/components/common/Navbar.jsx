@@ -86,7 +86,7 @@ export const Navbar = () => {
             <>
               <Link to="/login">
                 <Button variant="ghost" size="sm" className="gap-2">
-                  <User size={18} /> Login
+                  <User size={18} /> Login 
                 </Button>
               </Link>
               <Link to="/register">
